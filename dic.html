@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dictionary App</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f4f4f4;
+        }
+        h1 {
+            text-align: center;
+            color: #333;
+        }
+        .search-container {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 20px;
+        }
+        input {
+            padding: 10px;
+            width: 250px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+        button {
+            padding: 10px 20px;
+            margin-left: 10px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        .result-section {
+            margin-top: 20px;
+            background-color: white;
+            padding: 15px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .result-section h3 {
+            color: #007bff;
+            margin-bottom: 10px;
+        }
+        .result-section p {
+            margin: 5px 0;
+            line-height: 1.5;
+        }
+        .error {
+            color: red;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <h1>English Dictionary</h1>
+    <div class="search-container">
+        <input type="text" id="wordInput" placeholder="Enter a word (e.g., run)">
+        <button onclick="searchWord()">Search</button>
+    </div>
+    <div id="nouns" class="result-section" style="display: none;">
+        <h3>Nouns</h3>
+        <div id="nouns-content"></div>
+    </div>
+    <div id="verbs" class="result-section" style="display: none;">
+        <h3>Verbs</h3>
+        <div id="verbs-content"></div>
+    </div>
+    <div id="adjectives" class="result-section" style="display: none;">
+        <h3>Adjectives</h3>
+        <div id="adjectives-content"></div>
+    </div>
+    <div id="others" class="result-section" style="display: none;">
+        <h3>Other Parts of Speech</h3>
+        <div id="others-content"></div>
+    </div>
+    <div id="error" class="error"></div>
+
+    <script>
+        const OXFORD_APP_ID = 'YOUR_OXFORD_APP_ID'; // Oxford API App ID
+        const OXFORD_APP_KEY = 'YOUR_OXFORD_APP_KEY'; // Oxford API App Key
+        const MERRIAM_API_KEY = 'YOUR_MERRIAM_API_KEY'; // Merriam-Webster API Key
+
+        async function searchWord() {
+            const word = document.getElementById('wordInput').value.trim().toLowerCase();
+            const errorDiv = document.getElementById('error');
+            const sections = ['nouns', 'verbs', 'adjectives', 'others'];
+            sections.forEach(section => {
+                document.getElementById(section).style.display = 'none';
+                document.getElementById(`${section}-content`).innerHTML = '';
+            });
+            errorDiv.innerHTML = '';
+
+            if (!word) {
+                errorDiv.innerHTML = 'Please enter a word!';
+                return;
+            }
+
+            try {
+                // Oxford API isteği
+                const oxfordResponse = await fetch(
+                    `https://od-api.oxforddictionaries.com/api/v2/entries/en-gb/${word}?fields=definitions,pronunciations,examples`,
+                    {
+                        headers: {
+                            'app_id': OXFORD_APP_ID,
+                            'app_key': OXFORD_APP_KEY
+                        }
+                    }
+                );
+                const oxfordData = await oxfordResponse.json();
+
+                // Merriam-Webster API isteği
+                const merriamResponse = await fetch(
+                    `https://www.dictionaryapi.com/api/v3/references/collegiate/json/${word}?key=${MERRIAM_API_KEY}`
+                );
+                const merriamData = await merriamResponse.json();
+
+                // Verileri işle
+                processData(oxfordData, merriamData, word);
+            } catch (error) {
+                errorDiv.innerHTML = 'An error occurred while fetching data!';
+                console.error(error);
+            }
+        }
+
+        function processData(oxfordData, merriamData, word) {
+            const nouns = [];
+            const verbs = [];
+            const adjectives = [];
+            const others = [];
+
+            // Oxford verilerini işle
+            if (oxfordData.results) {
+                oxfordData.results.forEach(result => {
+                    result.lexicalEntries.forEach(entry => {
+                        const category = entry.lexicalCategory.text.toLowerCase();
+                        const senses = entry.entries[0].senses;
+                        const definitions = senses.map(sense => sense.definitions[0]).join('; ');
+                        const examples = senses.flatMap(sense => sense.examples?.map(ex => ex.text) || []);
+                        const item = {
+                            source: 'Oxford',
+                            definition: definitions,
+                            examples: examples
+                        };
+
+                        if (category === 'noun') nouns.push(item);
+                        else if (category === 'verb') verbs.push(item);
+                        else if (category === 'adjective') adjectives.push(item);
+                        else others.push(item);
+                    });
+                });
+            }
+
+            // Merriam-Webster verilerini işle
+            if (Array.isArray(merriamData) && merriamData[0]?.fl) {
+                merriamData.forEach(entry => {
+                    const category = entry.fl.toLowerCase();
+                    const definitions = entry.shortdef.join('; ');
+                    const examples = entry.suppl?.examples?.map(ex => ex.t.replace(/{it}/g, '')) || [];
+                    const item = {
+                        source: 'Merriam-Webster',
+                        definition: definitions,
+                        examples: examples
+                    };
+
+                    if (category === 'noun') nouns.push(item);
+                    else if (category === 'verb') verbs.push(item);
+                    else if (category === 'adjective') adjectives.push(item);
+                    else others.push(item);
+                });
+            }
+
+            // Sonuçları göster
+            displayResults('nouns', nouns);
+            displayResults('verbs', verbs);
+            displayResults('adjectives', adjectives);
+            displayResults('others', others);
+
+            // Eğer hiç sonuç yoksa hata göster
+            if (!nouns.length && !verbs.length && !adjectives.length && !others.length) {
+                document.getElementById('error').innerHTML = 'No results found for this word!';
+            }
+        }
+
+        function displayResults(section, items) {
+            if (items.length === 0) return;
+            const contentDiv = document.getElementById(`${section}-content`);
+            const sectionDiv = document.getElementById(section);
+            sectionDiv.style.display = 'block';
+
+            items.forEach(item => {
+                const div = document.createElement('div');
+                div.innerHTML = `
+                    <p><strong>${item.source}:</strong> ${item.definition}</p>
+                    ${item.examples.length ? `<p><em>Examples:</em> ${item.examples.join('; ')}</p>` : ''}
+                `;
+                contentDiv.appendChild(div);
+            });
+        }
+    </script>
+</body>
+</html>
