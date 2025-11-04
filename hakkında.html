@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Hakkımızda | Mustakil Dergi</title>
+  <style>
+    body {
+      font-family: "Georgia", "Times New Roman", serif;
+      background-color: #ffffff;
+      color: #333;
+      line-height: 1.7;
+      margin: 0;
+      padding: 0;
+    }
+
+    header {
+      text-align: center;
+      padding: 60px 20px 30px;
+      border-bottom: 1px solid #eee;
+    }
+
+    header h1 {
+      font-size: 2.2rem;
+      color: #00796B;
+      letter-spacing: 1px;
+      margin: 0;
+    }
+
+    section {
+      max-width: 800px;
+      margin: 50px auto;
+      padding: 0 20px;
+    }
+
+    section h2 {
+      color: #00796B;
+      font-size: 1.4rem;
+      margin-bottom: 10px;
+      border-left: 4px solid #00796B;
+      padding-left: 10px;
+    }
+
+    section p {
+      margin-bottom: 20px;
+    }
+
+    footer {
+      text-align: center;
+      padding: 30px;
+      font-size: 0.9rem;
+      color: #777;
+      border-top: 1px solid #eee;
+    }
+
+    a {
+      color: #00796B;
+      text-decoration: none;
+    }
+
+    a:hover {
+      text-decoration: underline;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Mustakil Dergi</h1>
+    <p>Fikir, sanat ve düşünce alanında bağımsız bir ses.</p>
+  </header>
+
+  <section>
+    <h2>Hakkımızda</h2>
+    <p>
+      Mustakil Dergi, düşünce dünyasında özgün bakış açılarını, felsefi sorgulamaları
+      ve sanatsal üretimleri bir araya getiren bağımsız bir platformdur.
+      Amacımız, modern dünyanın gürültüsü içinde kendi sesini bulmak isteyenlere
+      bir düşünme alanı sunmaktır.
+    </p>
+
+    <p>
+      Her yazı, bir fikrin yankısıdır. Her yazar, kendi hakikat yolculuğunun izini sürer.
+      Bizim için önemli olan, hakikate yaklaşma çabasıdır — ulaşmak değil.
+    </p>
+
+    <h2>Ekibimiz</h2>
+    <p>
+      Mustakil, farklı disiplinlerden gelen genç düşünürlerin katkısıyla şekillenmektedir.
+      Felsefe, teoloji, edebiyat ve sanat gibi alanlarda kalem oynatan her isim,
+      derginin çok sesli yapısına katkı sunar.
+    </p>
+
+    <h2>İletişim</h2>
+    <p>
+      Görüş, öneri veya katkı için bize ulaşabilirsiniz:  
+      <a>twitter.com/@MustakilDergi</a>
+    </p>
+  </section>
+
+  <footer>
+  
+  </footer>
+
+  <script>
+    // Küçük bir efekt: başlık görünürken sayfa yukarı kayınca renk tonu değişsin
+    window.addEventListener("scroll", function () {
+      const header = document.querySelector("header h1");
+      if (window.scrollY > 50) {
+        header.style.color = "#005f54";
+      } else {
+        header.style.color = "#00796B";
+      }
+    });
+  </script>
+</body>
+</html>
