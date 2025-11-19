@@ -3,111 +3,56 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Padros ;)</title>
-    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet">
-    <style>
-        body {
-            font-family: 'Roboto', sans-serif;
-            background-color: #f0f0f0;
-            margin: 0;
-            padding: 20px;
-            transition: background-color 0.3s, color 0.3s;
-        }
-        .container {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            max-width: 600px;
-            margin: 0 auto;
-        }
-        .profile img {
-            border-radius: 50%;
-            width: 150px;
-            height: 150px;
-            object-fit: cover;
-        }
-        .profile h1 {
-            font-size: 24px;
-            margin: 10px 0;
-        }
-        .profile p {
-            font-size: 16px;
-            color: #666;
-        }
-        .links {
-            list-style: none;
-            padding: 0;
-            width: 100%;
-        }
-        .links li {
-            margin: 10px 0;
-        }
-        .links a {
-            display: block;
-            padding: 12px 20px;
-            background-color: #007bff;
-            color: white;
-            text-decoration: none;
-            border-radius: 5px;
-            text-align: center;
-            transition: background-color 0.3s;
-        }
-        .links a:hover {
-            background-color: #0056b3;
-        }
-        .toggle-btn {
-            margin-top: 20px;
-            padding: 10px 20px;
-            background-color: #ccc;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-        }
-        .dark-mode {
-            background-color: #333;
-            color: #fff;
-        }
-        .dark-mode .profile p {
-            color: #ccc;
-        }
-        .dark-mode .links a {
-            background-color: #555;
-        }
-        .dark-mode .toggle-btn {
-            background-color: #888;
-        }
-        @media (max-width: 600px) {
-            .profile img {
-                width: 100px;
-                height: 100px;
-            }
-            .links a {
-                padding: 10px;
-            }
-        }
-    </style>
+    <title>Yazar Portföyü | Padros</title>
+    <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;500;700&display=swap" rel="stylesheet">
 </head>
 <body>
-    <div class="container">
-        <div class="profile">
-            <img src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEilOZGdRDiOEglSToiuUubccoU94yES8dXSjxMPbMOwu9N3XQGZgKgewxoSJY2BpJld27b1hdYXUqucB4e4i1Mhx2aGiWcbKEJ4zVjySoLgHg03sZ5VxjPnOal-BDyJtUxQpOua3B-C2nXJCIvgU-umWJtY_KEAPtShZaBH4x-NuW_rYA/s220/images-2.jpeg" alt="Profil Resmi">
-            <h1>Padros</h1>
-            <p>Felsefe işte, teoloji işte...</p>
-        </div>
-        <ul class="links">
-            <li><a href="https://mustakildergi.blogspot.com" aria-label="Örnek Link 1">Mustakil Dergi</a></li>
-            <li><a href="https://x.com/padrosum" aria-label="Örnek Link 2">Twitter</a></li>
-            <li><a href="https://example.com" aria-label="Örnek Link 3">Örnek Link 3</a></li>
-        </ul>
-        <button class="toggle-btn">Dark Mode</button>
-    </div>
-    <script>
-        const toggleButton = document.querySelector('.toggle-btn');
-        toggleButton.addEventListener('click', () => {
-            document.body.classList.toggle('dark-mode');
-            toggleButton.textContent = document.body.classList.contains('dark-mode') 
-                ? 'Light Mode' : 'Dark Mode';
-        });
-    </script>
+
+    <header class="header">
+        <h1>Padros</h1>
+        <nav>
+            <a href="#home">Ana Sayfa</a>
+            <a href="#archive">Yazılarım</a>
+            <a href="#about">Hakkımda</a>
+            <a href="#contact">İletişim</a>
+        </nav>
+    </header>
+
+    <main>
+        <section id="home" class="section">
+            <h2 class="hero-text">Okuyuculara rehberlik eden yazılar.</h2>
+            <p>Son paylaşımlarım:</p>
+            <div id="latest-posts" class="archive-list latest">
+                </div>
+            <a href="#archive" class="button">Tüm Arşivi Gör</a>
+        </section>
+        
+        <section id="archive" class="section">
+            <h2>Yazılarım Arşivi</h2>
+            <div id="full-archive" class="archive-list full">
+                </div>
+        </section>
+
+        <section id="about" class="section">
+            <h2>Hakkımda</h2>
+            <p>Felsefe, Teoloji vesaire konuları üzerine yazılar yazıyoruz kardeşcanlar</p>
+            <p>Daha fazla bilgi için diğer bağlantılarımı ziyaret edebilirsiniz.</p>
+        </section>
+        
+        <section id="contact" class="section">
+            <h2>İletişim</h2>
+            <div class="social-links">
+                <a href="https://padros.substack.com" target="_blank">SubStack</a>
+                <a href="https://x.com/padrosum" target="_blank">Twitter</a>
+            </div>
+        </section>
+    </main>
+
+    <footer class="footer">
+        <p>©</p>
+    </footer>
+
+    <script src="script.js"></script>
 </body>
 </html>
