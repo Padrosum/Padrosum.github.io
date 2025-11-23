@@ -2,136 +2,195 @@
 <html lang="tr">
 <head>
     <meta charset="UTF-8">
-    <title>Basit Texas Hold'em Poker</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Canlı Texas Hold'em Poker</title>
     <style>
         /* --- CSS TASARIMI --- */
+        :root {
+            --felt-color: #27ae60;
+            --wood-color: #5d4037;
+        }
+
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background-color: #2c3e50;
+            background-color: #2c3e50; /* Arka plan */
+            background-image: radial-gradient(circle, #34495e 10%, transparent 10%), radial-gradient(circle, #34495e 10%, transparent 10%);
+            background-size: 20px 20px;
+            background-position: 0 0, 10px 10px;
             color: white;
             display: flex;
             flex-direction: column;
             align-items: center;
             min-height: 100vh;
             margin: 0;
+            padding: 10px;
+            box-sizing: border-box;
         }
 
-        h1 { margin-top: 10px; text-shadow: 2px 2px 4px #000; }
+        h1 { margin: 10px 0; text-shadow: 2px 2px 4px #000; font-size: 1.8rem;}
 
         #poker-table {
-            background-color: #27ae60; /* Yeşil Masa Rengi */
-            border: 15px solid #5d4037; /* Ahşap Kenarlık */
-            border-radius: 100px;
-            width: 90%;
-            max-width: 800px;
-            height: 500px;
+            background-color: var(--felt-color); /* Yeşil Masa Rengi */
+            /* Masaya hafif bir keçe dokusu verelim */
+            background-image: url("data:image/svg+xml,%3Csvg width='40' height='40' viewBox='0 0 40 40' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M20 20.5V18H0v2.5h20zM20 22v-2.5H0V22h20zM40 20.5V18H20v2.5h20zM40 22v-2.5H20V22h20zM20 0v2.5H0V0h20zM20 1.5V4H0V1.5h20zM40 0v2.5H20V0h20zM40 1.5V4H20V1.5h20zM20 40v-2.5H0V40h20zM20 38.5V36H0v2.5h20zM40 40v-2.5H20V40h20zM40 38.5V36H20v2.5h20z' fill='%231e8449' fill-opacity='0.15' fill-rule='evenodd'/%3E%3C/svg%3E");
+            border: 12px solid var(--wood-color);
+            border-radius: 80px;
+            width: 95%;
+            max-width: 700px;
+            height: 450px;
             position: relative;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            box-shadow: inset 0 0 50px rgba(0,0,0,0.5), 0 10px 30px rgba(0,0,0,0.5);
             display: flex;
             flex-direction: column;
-            justify-content: space-between;
-            padding: 20px;
+            justify-content: space-around;
+            padding: 15px;
+            perspective: 1000px; /* 3D efekti için */
         }
 
-        .hand-area {
+        .hand-area, .community-area {
             display: flex;
             justify-content: center;
             align-items: center;
-            height: 120px;
+            height: 100px;
         }
 
         .community-area {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 120px;
-            background-color: rgba(0,0,0,0.1);
-            border-radius: 10px;
-            margin: 0 50px;
+            background-color: rgba(0,0,0,0.15);
+            border-radius: 50px;
+            padding: 5px 20px;
+            margin: 0 auto;
+            border: 2px solid rgba(255,255,255,0.1);
         }
 
-        /* Kart Tasarımı */
+        /* --- KART TASARIMI VE ANİMASYONLARI --- */
+        .card-container {
+            width: 60px;
+            height: 90px;
+            margin: 0 4px;
+            position: relative;
+            /* Kartın masaya geliş animasyonu */
+            animation: dealCard 0.6s cubic-bezier(0.23, 1, 0.32, 1) forwards;
+            opacity: 0; /* Başlangıçta görünmez */
+            transform: translateY(-200px) rotate(720deg); /* Yukarıdan ve dönerek gelsin */
+        }
+
+        @keyframes dealCard {
+            to {
+                opacity: 1;
+                transform: translateY(0) rotate(0deg);
+            }
+        }
+
         .card {
-            width: 70px;
-            height: 100px;
-            background-color: white;
-            border-radius: 5px;
-            margin: 0 5px;
+            width: 100%;
+            height: 100%;
+            background-color: #ecf0f1;
+            border-radius: 6px;
             display: flex;
             flex-direction: column;
             justify-content: center;
             align-items: center;
             font-weight: bold;
-            font-size: 20px;
+            font-size: 18px;
             box-shadow: 2px 2px 5px rgba(0,0,0,0.3);
-            position: relative;
+            position: absolute;
+            top: 0;
+            left: 0;
+            backface-visibility: hidden; /* Arka yüzü gizle */
+            transition: transform 0.6s, opacity 0.1s;
+        }
+
+        .card-face {
+            z-index: 2;
+            transform: rotateY(0deg);
         }
 
         .card.red { color: #c0392b; }
         .card.black { color: #2c3e50; }
 
         .card-back {
-            background: repeating-linear-gradient(
-                45deg,
-                #e74c3c,
-                #e74c3c 10px,
-                #c0392b 10px,
-                #c0392b 20px
-            );
-            color: transparent;
+            z-index: 1;
+            background: repeating-linear-gradient(45deg, #c0392b, #c0392b 5px, #e74c3c 5px, #e74c3c 10px);
+            border: 3px solid white;
+            /* CPU kartı kapalıyken ön yüzü gizlemek için döndür */
+            transform: rotateY(180deg);
         }
 
-        /* Kontrol Paneli */
+        /* CPU kartı açılma efekti için sınıf */
+        .reveal-card .card-back {
+            transform: rotateY(0deg); /* Arka yüzü öne döndür (aslında gizle) */
+            z-index: 0;
+        }
+        .reveal-card .card-face {
+             transform: rotateY(-180deg); /* Ön yüzü arkaya döndür (göster) */
+             z-index: 3;
+        }
+        
+        /* --- ARAYÜZ ELEMANLARI --- */
         #controls {
-            margin-top: 20px;
+            margin-top: 15px;
             display: flex;
             gap: 10px;
+            flex-wrap: wrap;
+            justify-content: center;
         }
 
         button {
-            padding: 10px 20px;
+            padding: 12px 24px;
             font-size: 16px;
             cursor: pointer;
-            background-color: #f39c12;
-            border: none;
-            border-radius: 5px;
+            background: linear-gradient(to bottom, #f39c12, #d35400);
+            border: 2px solid #b84c00;
+            border-radius: 8px;
             color: white;
             font-weight: bold;
-            transition: 0.2s;
+            transition: all 0.2s;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.3);
+            box-shadow: 0 4px #9e4100;
+        }
+        
+        button:active {
+             box-shadow: 0 1px #9e4100;
+             transform: translateY(3px);
         }
 
-        button:hover { background-color: #d35400; }
-        button:disabled { background-color: #95a5a6; cursor: not-allowed; }
+        button:hover:not(:disabled) { filter: brightness(1.1); }
+        button:disabled { background: #7f8c8d; border-color: #586667; color: #bdc3c7; box-shadow: none; cursor: not-allowed; transform: none;}
 
         #status-msg {
-            font-size: 1.2em;
-            margin-bottom: 10px;
-            background: rgba(0,0,0,0.5);
-            padding: 10px;
-            border-radius: 5px;
-            min-width: 300px;
+            font-size: 1.1em;
+            margin-bottom: 15px;
+            background: rgba(0,0,0,0.7);
+            padding: 8px 20px;
+            border-radius: 20px;
+            min-width: 250px;
             text-align: center;
+            border: 1px solid rgba(255,255,255,0.2);
         }
 
         .label {
             position: absolute;
-            color: rgba(255,255,255,0.7);
-            font-size: 12px;
+            color: rgba(255,255,255,0.6);
+            font-size: 11px;
             text-transform: uppercase;
+            letter-spacing: 1px;
+            background: rgba(0,0,0,0.3);
+            padding: 2px 5px;
+            border-radius: 4px;
         }
-        #cpu-label { top: 10px; left: 20px; }
-        #player-label { bottom: 10px; left: 20px; }
+        #cpu-label { top: 10px; left: 50%; transform: translateX(-50%); }
+        #player-label { bottom: 10px; left: 50%; transform: translateX(-50%); }
 
     </style>
 </head>
 <body>
 
-    <h1>Texas Hold'em Poker</h1>
+    <h1>Canlı Texas Hold'em</h1>
     
     <div id="status-msg">Oyuna başlamak için 'Dağıt' butonuna bas.</div>
 
     <div id="poker-table">
-        <div id="cpu-label" class="label">Bilgisayar (CPU)</div>
+        <div id="cpu-label" class="label">Bilgisayar</div>
         
         <div id="cpu-hand" class="hand-area"></div>
 
@@ -144,12 +203,37 @@
 
     <div id="controls">
         <button id="btn-deal" onclick="startGame()">Dağıt</button>
-        <button id="btn-next" onclick="nextStep()" disabled>Sıradaki Kartlar (Check)</button>
+        <button id="btn-next" onclick="nextStep()" disabled>Check (Devam)</button>
         <button id="btn-fold" onclick="fold()" disabled>Pas (Fold)</button>
     </div>
 
     <script>
-        /* --- JAVASCRIPT MANTIĞI --- */
+        /* --- SES EFEKTLERİ (BASE64) --- */
+        // Not: Dosya boyutunu küçük tutmak için çok kısa, sentezlenmiş sesler kullanılmıştır.
+
+        // Kart dağıtma sesi (kısa bir hışırtı/klik)
+        const sfxDeal = new Audio('data:audio/wav;base64,UklGRlYAAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQ4AAACAgICAgICAgICAgIB/f39/f39/f39/f39/f39/f39/f39/f39/f39/f39/f4CAgICAgICAgICAgICAgICAgH9/f39/f39/f39/f39/f3+AgICAgICAgICAgICAgICAgH9/f39/f39/f39/f39/f3+AgICAgICAgICAgICAgIA=');
+        
+        // Çip sesi / Buton tıklama (kısa bir "tık")
+        const sfxClick = new Audio('data:audio/wav;base64,UklGRkoAAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQAAAAAA//8AAP//AAD//wAA//8AAP//AAD//wAA//8AAP//AAD//wAA//8AAP//AAD//wAA//8AAP//AAD//wAA');
+
+        // Kazanma sesi (kısa pozitif bir tını)
+        const sfxWin = new Audio('data:audio/wav;base64,UklGRjQAAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YYAAAAAAgD+AQIB/f39/f3+AgIB/f39/f3+AgIB/f39/f3+AgIA=');
+
+        // Kaybetme/Fold sesi (kısa negatif bir tını)
+        const sfxLose = new Audio('data:audio/wav;base64,UklGRjAAAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YXYAAACAgIB/gH+Af39/f39/f4CAgH9/f39/f3+AgIB/f39/f39/gIA=');
+
+        // Sesleri asenkron çalmak için yardımcı fonksiyon (hızlı tekrar için)
+        function playSound(sound) {
+            // Tarayıcıların otomatik ses çalma engeline takılmamak için kullanıcı etkileşimi beklenir.
+            // Bu basit klonlama yöntemi, aynı sesin üst üste binmesini sağlar.
+            let soundClone = sound.cloneNode(); 
+            soundClone.volume = 0.5; // Sesi biraz kısalım
+            soundClone.play().catch(() => {/* Kullanıcı henüz etkileşime girmediyse hata yoksay */});
+        }
+
+
+        /* --- JAVASCRIPT OYUN MANTIĞI --- */
 
         const suits = ['♠', '♥', '♦', '♣'];
         const values = ['2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K', 'A'];
@@ -158,9 +242,9 @@
         let playerHand = [];
         let cpuHand = [];
         let communityCards = [];
-        let stage = 0; // 0: Start, 1: Pre-flop, 2: Flop, 3: Turn, 4: River, 5: Showdown
+        let stage = 0;
+        let cpuCardElements = []; // CPU kartlarını daha sonra açmak için referans tutacağız
 
-        // Deste oluşturma
         function createDeck() {
             deck = [];
             for (let s of suits) {
@@ -170,7 +254,6 @@
             }
         }
 
-        // Desteyi karıştırma
         function shuffleDeck() {
             for (let i = deck.length - 1; i > 0; i--) {
                 const j = Math.floor(Math.random() * (i + 1));
@@ -178,139 +261,178 @@
             }
         }
 
-        // Kart HTML'i oluşturma
-        function createCardHTML(card, hidden = false) {
-            const div = document.createElement('div');
-            div.className = 'card';
-            if (hidden) {
-                div.classList.add('card-back');
-            } else {
-                if (card.suit === '♥' || card.suit === '♦') div.classList.add('red');
-                else div.classList.add('black');
-                div.innerHTML = `<div>${card.value}</div><div>${card.suit}</div>`;
+        // Gelişmiş 3D Kart HTML Yapısı Oluşturma
+        function createCardHTML(card, isCpu = false) {
+            const container = document.createElement('div');
+            container.className = 'card-container';
+            // Animasyonun sırayla tetiklenmesi için rastgele küçük bir gecikme ekleyelim
+            container.style.animationDelay = `${Math.random() * 0.3}s`;
+
+            // Ön yüz (Kartın kendisi)
+            const cardFace = document.createElement('div');
+            cardFace.className = 'card card-face';
+            if (card.suit === '♥' || card.suit === '♦') cardFace.classList.add('red');
+            else cardFace.classList.add('black');
+            cardFace.innerHTML = `<div>${card.value}</div><div>${card.suit}</div>`;
+
+            // Arka yüz (Desen)
+            const cardBack = document.createElement('div');
+            cardBack.className = 'card card-back';
+
+            // Yapıyı birleştir
+            container.appendChild(cardBack);
+            container.appendChild(cardFace);
+            
+            // Eğer CPU kartıysa, başlangıçta arka yüzü göster (bunu CSS'deki transform ile yapıyoruz)
+            if (isCpu) {
+                container.classList.add('reveal-card'); // Başlangıçta ters dursun
+                cpuCardElements.push(container);
             }
-            return div;
+
+            return container;
         }
 
-        // Oyunu Başlatma
-        function startGame() {
+        // Kartları sırayla animasyonlu dağıtmak için yardımcı fonksiyon
+        async function dealCardsWithAnimation(cards, targetElement, isCpu = false) {
+            targetElement.innerHTML = '';
+            for (const card of cards) {
+                const cardEl = createCardHTML(card, isCpu);
+                targetElement.appendChild(cardEl);
+                playSound(sfxDeal); // Her kartta ses çal
+                // Bir sonraki kartı dağıtmadan önce kısa bir süre bekle (animasyon için)
+                await new Promise(r => setTimeout(r, 200));
+            }
+        }
+
+        async function startGame() {
+            playSound(sfxClick);
+            updateStatus("Kartlar karıştırılıyor ve dağıtılıyor...");
+            document.getElementById('btn-deal').disabled = true;
+            
             createDeck();
             shuffleDeck();
             playerHand = [deck.pop(), deck.pop()];
             cpuHand = [deck.pop(), deck.pop()];
             communityCards = [];
+            cpuCardElements = []; // Referansları temizle
             stage = 1;
 
-            renderGame();
-            updateStatus("Kartlar dağıtıldı. Devam etmek için tıklayın.");
+            document.getElementById('community-cards').innerHTML = ''; // Ortayı temizle
+
+            // Sırayla dağıt: Önce oyuncu, sonra CPU
+            await dealCardsWithAnimation(playerHand, document.getElementById('player-hand'), false);
+            await dealCardsWithAnimation(cpuHand, document.getElementById('cpu-hand'), true);
+
+            updateStatus("Sıra sende. Devam etmek için 'Check' yap.");
             
-            document.getElementById('btn-deal').disabled = true;
             document.getElementById('btn-next').disabled = false;
             document.getElementById('btn-fold').disabled = false;
             document.getElementById('btn-next').innerText = "Gör / Devam Et";
         }
 
-        // Oyunu Çizme
-        function renderGame(showCpuCards = false) {
-            const playerDiv = document.getElementById('player-hand');
-            const cpuDiv = document.getElementById('cpu-hand');
-            const communityDiv = document.getElementById('community-cards');
+        async function nextStep() {
+            playSound(sfxClick);
+            document.getElementById('btn-next').disabled = true; // İşlem bitene kadar butonu kilitle
 
-            playerDiv.innerHTML = '';
-            cpuDiv.innerHTML = '';
-            communityDiv.innerHTML = '';
-
-            // Oyuncu Kartları
-            playerHand.forEach(card => playerDiv.appendChild(createCardHTML(card)));
-
-            // CPU Kartları (Oyun bitmediyse gizli)
-            cpuHand.forEach(card => cpuDiv.appendChild(createCardHTML(card, !showCpuCards)));
-
-            // Yer Kartları
-            communityCards.forEach(card => communityDiv.appendChild(createCardHTML(card)));
-        }
-
-        // Sonraki Aşamaya Geçiş
-        function nextStep() {
-            if (stage === 1) { // Flop (3 kart)
-                communityCards.push(deck.pop(), deck.pop(), deck.pop());
+            let newCards = [];
+            if (stage === 1) { // Flop
+                newCards = [deck.pop(), deck.pop(), deck.pop()];
                 stage = 2;
-                updateStatus("Flop açıldı.");
-            } else if (stage === 2) { // Turn (1 kart)
-                communityCards.push(deck.pop());
+                updateStatus("Flop açılıyor...");
+            } else if (stage === 2) { // Turn
+                newCards = [deck.pop()];
                 stage = 3;
-                updateStatus("Turn kartı açıldı.");
-            } else if (stage === 3) { // River (1 kart)
-                communityCards.push(deck.pop());
+                updateStatus("Turn kartı geliyor...");
+            } else if (stage === 3) { // River
+                newCards = [deck.pop()];
                 stage = 4;
                 document.getElementById('btn-next').innerText = "Elleri Aç (Showdown)";
-                updateStatus("River kartı açıldı. Son karar!");
+                updateStatus("River (son kart) açılıyor!");
             } else if (stage === 4) { // Showdown
                 determineWinner();
                 stage = 5;
-                return; // Fonksiyondan çık
+                return;
             }
-            renderGame();
+
+            communityCards.push(...newCards);
+            // Yeni kartları animasyonla ekle
+            const communityDiv = document.getElementById('community-cards');
+            for (const card of newCards) {
+                const cardEl = createCardHTML(card);
+                communityDiv.appendChild(cardEl);
+                playSound(sfxDeal);
+                await new Promise(r => setTimeout(r, 250));
+            }
+
+            if(stage < 5) {
+                 document.getElementById('btn-next').disabled = false;
+                 updateStatus("Sıra sende.");
+            }
         }
 
         function fold() {
+            playSound(sfxLose);
             updateStatus("Pas geçtiniz. Bilgisayar kazandı.");
-            renderGame(true); // CPU kartlarını göster
+            revealCpuCards();
             endGame();
         }
 
-        // Basit El Değerlendirmesi (Skorlama)
-        // Not: Bu kısım tam poker kuralları için çok karmaşıktır.
-        // Burada basitleştirilmiş bir "Ağırlıklı Skor" sistemi kullanıyoruz.
+        function revealCpuCards() {
+             // CPU kartlarındaki 'reveal-card' sınıfını kaldırarak dönmelerini sağla
+            cpuCardElements.forEach(container => {
+                container.classList.remove('reveal-card');
+            });
+        }
+
+        // Basit El Değerlendirmesi (Önceki ile aynı)
         function calculateHandStrength(hand, community) {
             const allCards = hand.concat(community);
-            // Kartları büyükten küçüğe sırala
             allCards.sort((a, b) => b.weight - a.weight);
-
-            // Skor hesapla (Basit mantık: Çiftler, Renk vb. kontrolü)
-            // Gerçek bir poker oyununda burada 10 farklı el kontrolü yapılır.
-            // Prototip için: En yüksek kart + Çift var mı kontrolü.
-            
             let score = 0;
             let counts = {};
             let suitsCount = {};
 
             allCards.forEach(card => {
-                score += card.weight; // Yüksek kart puanı
+                score += card.weight;
                 counts[card.value] = (counts[card.value] || 0) + 1;
                 suitsCount[card.suit] = (suitsCount[card.suit] || 0) + 1;
             });
-
-            // Çift, Üçlü, Dörtlü Puanları
             for (let val in counts) {
-                if (counts[val] === 2) score += 100; // Per
-                if (counts[val] === 3) score += 300; // Üçlü
-                if (counts[val] === 4) score += 700; // Kare
+                if (counts[val] === 2) score += 100;
+                if (counts[val] === 3) score += 300;
+                if (counts[val] === 4) score += 700;
             }
-
-            // Flush (Renk) Puanı
             for (let suit in suitsCount) {
                 if (suitsCount[suit] >= 5) score += 500;
             }
-
             return score;
         }
 
-        function determineWinner() {
+        async function determineWinner() {
+            updateStatus("Eller açılıyor...");
+            
+            // CPU kartlarını dramatik bir şekilde tek tek açalım
+            for(let i = 0; i < cpuCardElements.length; i++) {
+                 cpuCardElements[i].classList.remove('reveal-card');
+                 playSound(sfxDeal); // Açılma sesi
+                 await new Promise(r => setTimeout(r, 300));
+            }
+
             const playerScore = calculateHandStrength(playerHand, communityCards);
             const cpuScore = calculateHandStrength(cpuHand, communityCards);
-
-            renderGame(true); // CPU kartlarını aç
 
             let msg = "";
             if (playerScore > cpuScore) {
                 msg = "Tebrikler! Sen Kazandın! 🎉";
                 document.getElementById('status-msg').style.backgroundColor = "#27ae60";
+                playSound(sfxWin);
             } else if (cpuScore > playerScore) {
                 msg = "Bilgisayar Kazandı. 😔";
                 document.getElementById('status-msg').style.backgroundColor = "#c0392b";
+                playSound(sfxLose);
             } else {
                 msg = "Berabere! 🤝";
+                 playSound(sfxClick);
             }
             updateStatus(msg);
             endGame();
@@ -325,9 +447,8 @@
 
         function updateStatus(msg) {
             document.getElementById('status-msg').innerText = msg;
-            // Rengi sıfırla (kazanma durumu hariç)
             if(!msg.includes("Kazandın") && !msg.includes("Bilgisayar")) {
-                document.getElementById('status-msg').style.backgroundColor = "rgba(0,0,0,0.5)";
+                document.getElementById('status-msg').style.backgroundColor = "rgba(0,0,0,0.7)";
             }
         }
 
