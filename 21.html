@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>21</title>
+    <title>Neon VIP Blackjack v3</title>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;600;800&display=swap');
 
@@ -35,7 +35,6 @@
             user-select: none;
         }
 
-        /* Başlık ve Üst Kısım */
         .top-bar {
             width: 90%;
             max-width: 1000px;
@@ -61,7 +60,6 @@
             letter-spacing: 2px;
         }
 
-        /* Ses Butonu */
         #btn-sound {
             background: rgba(255,255,255,0.1);
             border: 1px solid rgba(255,255,255,0.2);
@@ -75,7 +73,6 @@
         #btn-sound:hover { background: rgba(255,255,255,0.2); color: white; }
         #btn-sound.muted { color: #666; text-decoration: line-through; }
 
-        /* Oyun Masası (Glass Panel) */
         .game-table {
             width: 90%;
             max-width: 1000px;
@@ -100,7 +97,6 @@
             min-height: 180px;
         }
 
-        /* Skor Tabelası */
         .score-badge {
             font-size: 1rem;
             text-transform: uppercase;
@@ -123,15 +119,14 @@
             box-shadow: 0 0 15px rgba(251, 191, 36, 0.2);
         }
 
-        /* Kartlar Konteyneri */
         .cards-row {
             display: flex;
             justify-content: center;
-            gap: 15px; /* Kartlar yan yana */
+            gap: 15px;
             perspective: 1000px;
         }
 
-        /* Modern Kart Tasarımı */
+        /* Kart Tasarımı */
         .card {
             width: var(--card-w);
             height: var(--card-h);
@@ -140,7 +135,7 @@
             display: flex;
             flex-direction: column;
             justify-content: space-between;
-            padding: 12px;
+            padding: 10px;
             box-sizing: border-box;
             box-shadow: 0 10px 20px rgba(0,0,0,0.3);
             font-weight: 800;
@@ -168,11 +163,24 @@
         .card.red { color: #ef4444; }
         .card.black { color: #1e293b; }
 
-        .card-top { font-size: 1.5rem; line-height: 1; text-align: left; }
-        .card-center { font-size: 3rem; align-self: center; line-height: 1; }
-        .card-bot { font-size: 1.5rem; line-height: 1; text-align: right; transform: rotate(180deg); }
+        .card-top { font-size: 1.2rem; line-height: 1; text-align: left; }
+        /* Ortadaki alan için genel stil */
+        .card-center { 
+            align-self: center; 
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+        /* Numaralı kartların ortası */
+        .card-center.numbered { font-size: 3rem; line-height: 1; }
+        
+        /* J, Q, K kartlarının ortası için özel stil */
+        .royal-symbol { font-size: 1.8rem; opacity: 0.7; line-height: 1; margin-bottom: -5px;}
+        .royal-letter { font-size: 3.2rem; line-height: 0.9; }
 
-        /* Mesaj Alanı (Ortada) */
+        .card-bot { font-size: 1.2rem; line-height: 1; text-align: right; transform: rotate(180deg); }
+
         #message-overlay {
             position: absolute;
             top: 50%; left: 50%;
@@ -185,7 +193,6 @@
             pointer-events: none;
         }
 
-        /* Kontrol Butonları */
         .controls-bar {
             margin-top: 30px;
             display: flex;
@@ -245,14 +252,15 @@
             cursor: not-allowed;
         }
 
-        /* Mobil Uyum */
         @media (max-width: 600px) {
             :root { --card-w: 70px; --card-h: 100px; }
             .game-table { padding: 15px; min-height: 400px; }
             .btn { padding: 12px 25px; font-size: 0.9rem; }
             .score-badge { font-size: 0.8rem; }
-            .card-center { font-size: 2rem; }
-            .card-top, .card-bot { font-size: 1rem; }
+            .card-center.numbered { font-size: 2rem; }
+            .royal-symbol { font-size: 1.2rem; }
+            .royal-letter { font-size: 2rem; }
+            .card-top, .card-bot { font-size: 0.9rem; }
         }
     </style>
 </head>
@@ -344,11 +352,10 @@
         }
 
         function playWinSound() {
-            // Modern, "Level Up" benzeri bir ses
-            playTone(523.25, 'sine', 0.4, 0); // Do
-            playTone(659.25, 'sine', 0.4, 0.1); // Mi
-            playTone(783.99, 'triangle', 0.6, 0.2); // Sol (Parlak)
-            playTone(1046.50, 'sine', 0.8, 0.3); // İnce Do
+            playTone(523.25, 'sine', 0.4, 0);
+            playTone(659.25, 'sine', 0.4, 0.1);
+            playTone(783.99, 'triangle', 0.6, 0.2);
+            playTone(1046.50, 'sine', 0.8, 0.3);
         }
 
         function playLoseSound() {
@@ -387,7 +394,6 @@
             btnStand.disabled = false;
             btnNew.style.display = "none";
 
-            // Animasyonlu Dağıtım
             dealCard(playerHand);
             setTimeout(() => dealCard(dealerHand), 300);
             setTimeout(() => dealCard(playerHand), 600);
@@ -511,7 +517,6 @@
                 if (index === 0 && !showDealerAll) {
                     const hiddenCard = document.createElement('div');
                     hiddenCard.className = 'card';
-                    // Arkası dönük kart için modern desen
                     hiddenCard.style.background = `repeating-linear-gradient(45deg, #1e293b, #1e293b 10px, #0f172a 10px, #0f172a 20px)`;
                     hiddenCard.style.border = "2px solid #334155";
                     dealerCardsDiv.appendChild(hiddenCard);
@@ -527,12 +532,33 @@
             }
         }
 
+        // --- Kart Oluşturma Fonksiyonu (DÜZELTİLDİ) ---
         function createCardElement(card) {
             const div = document.createElement('div');
             div.className = `card ${card.suit === '♥' || card.suit === '♦' ? 'red' : 'black'}`;
+            
+            const isFaceCard = ['J', 'Q', 'K'].includes(card.value);
+            let centerHTML = '';
+
+            if (isFaceCard) {
+                // Resimli kartlar için özel semboller ve büyük harf
+                let royalSymbol = '';
+                if(card.value === 'K') royalSymbol = '♔'; // Kral Tacı
+                else if(card.value === 'Q') royalSymbol = '♕'; // Kraliçe Tacı
+                else if(card.value === 'J') royalSymbol = '♟︎'; // Piyon (Asker)
+
+                centerHTML = `
+                    <div class="royal-symbol">${royalSymbol}</div>
+                    <div class="royal-letter">${card.value}</div>
+                `;
+            } else {
+                // Numaralı kartlar için sadece büyük sembol
+                centerHTML = card.suit;
+            }
+
             div.innerHTML = `
                 <div class="card-top">${card.value}<br>${card.suit}</div>
-                <div class="card-center">${card.suit}</div>
+                <div class="card-center ${isFaceCard ? '' : 'numbered'}">${centerHTML}</div>
                 <div class="card-bot">${card.value}<br>${card.suit}</div>
             `;
             return div;
