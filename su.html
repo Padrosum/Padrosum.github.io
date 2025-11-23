@@ -2,130 +2,183 @@
 <html lang="tr">
 <head>
     <meta charset="UTF-8">
-    <title>Su Simülasyonu</title>
+    <title>Gerçekçi Su Birikme Simülasyonu</title>
     <style>
         body {
             margin: 0;
-            overflow: hidden; /* Kaydırma çubuklarını gizle */
-            background-color: #1a1a1a; /* Koyu arka plan */
-            font-family: sans-serif;
+            background-color: #000;
+            color: white;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            overflow: hidden;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
         }
         canvas {
-            display: block;
+            border: 1px solid #333;
+            box-shadow: 0 0 20px rgba(0, 150, 255, 0.2);
+            cursor: crosshair;
         }
-        .info {
+        .ui {
             position: absolute;
             top: 20px;
             left: 20px;
-            color: white;
-            pointer-events: none; /* Yazının tıklamayı engellememesi için */
-            background: rgba(0,0,0,0.5);
-            padding: 10px;
-            border-radius: 5px;
+            background: rgba(0, 0, 0, 0.7);
+            padding: 15px;
+            border-radius: 8px;
+            pointer-events: none;
+            max-width: 300px;
         }
+        h3 { margin: 0 0 10px 0; color: #00a8ff; }
+        p { font-size: 0.9rem; color: #ccc; margin: 5px 0; }
     </style>
 </head>
 <body>
 
-    <div class="info">
-        <h3>Su Efekti</h3>
-        <p>Farenizi ekranda gezdirin veya tıklayın!</p>
-    </div>
-    
-    <canvas id="canvas1"></canvas>
+<div class="ui">
+    <h3>Su Fiziği Motoru</h3>
+    <p>🖱️ <b>Sol Tık + Sürükle:</b> Su ekle</p>
+    <p>Su tanecikleri birikir, taşar ve çukurları doldurur.</p>
+</div>
 
-    <script>
-        const canvas = document.getElementById('canvas1');
-        const ctx = canvas.getContext('2d');
+<canvas id="sandCanvas"></canvas>
 
-        // Canvas boyutunu ekran boyutuna eşitle
+<script>
+    const canvas = document.getElementById('sandCanvas');
+    const ctx = canvas.getContext('2d');
+
+    // AYARLAR
+    const w = 5; // Her bir su karesinin boyutu (Piksel)
+    let cols, rows;
+    let grid; // Mevcut durum
+    let velocityGrid; // Suyun hızını (gerçekçilik için) tutabiliriz ama şimdilik basit tutalım.
+    let hueValue = 200; // Suyun rengi (Mavi tonları)
+
+    function setup() {
+        // Canvas'ı tam ekran yapma ama performans için ızgara boyutunu yönetilebilir tutma
         canvas.width = window.innerWidth;
         canvas.height = window.innerHeight;
+        
+        cols = Math.floor(canvas.width / w);
+        rows = Math.floor(canvas.height / w);
+        
+        // Izgarayı (Grid) oluştur ve içini 0 (boş) ile doldur
+        grid = make2DArray(cols, rows);
+    }
 
-        // Su damlası (Parçacık) Listesi
-        const particlesArray = [];
-        let hue = 0; // Renk değişimi için
+    function make2DArray(cols, rows) {
+        let arr = new Array(cols);
+        for (let i = 0; i < arr.length; i++) {
+            arr[i] = new Array(rows).fill(0);
+        }
+        return arr;
+    }
 
-        // Pencere boyutu değişirse canvası güncelle
-        window.addEventListener('resize', function(){
-            canvas.width = window.innerWidth;
-            canvas.height = window.innerHeight;
-        });
+    // FARE ETKİLEŞİMİ
+    let isMouseDown = false;
 
-        // Fare koordinatlarını tutan nesne
-        const mouse = {
-            x: undefined,
-            y: undefined,
+    document.addEventListener('mousedown', () => isMouseDown = true);
+    document.addEventListener('mouseup', () => isMouseDown = false);
+    
+    // Mobilde dokunmatik desteği için
+    document.addEventListener('touchstart', () => isMouseDown = true);
+    document.addEventListener('touchend', () => isMouseDown = false);
+
+    // Mouse konumu
+    let mouseX = 0;
+    let mouseY = 0;
+    canvas.addEventListener('mousemove', (e) => {
+        mouseX = e.clientX;
+        mouseY = e.clientY;
+    });
+    canvas.addEventListener('touchmove', (e) => {
+        mouseX = e.touches[0].clientX;
+        mouseY = e.touches[0].clientY;
+    });
+
+    function draw() {
+        // Arkaplanı temizle
+        ctx.fillStyle = 'black';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        // Yeni bir ızgara oluştur (Bir sonraki kare için hesaplama)
+        let nextGrid = make2DArray(cols, rows);
+
+        // Fare basılıysa su ekle
+        if (isMouseDown) {
+            let mouseCol = Math.floor(mouseX / w);
+            let mouseRow = Math.floor(mouseY / w);
+            
+            // Fırça boyutu (Matrix brush)
+            let extent = 4; // Fırça kalınlığı
+            for (let i = -extent; i <= extent; i++) {
+                for (let j = -extent; j <= extent; j++) {
+                    let col = mouseCol + i;
+                    let row = mouseRow + j;
+                    // Ekran sınırları içinde mi ve rastgelelik ekle (doğal akış için)
+                    if (col >= 0 && col < cols && row >= 0 && row < rows) {
+                        if (Math.random() > 0.1) { 
+                            grid[col][row] = hueValue; 
+                        }
+                    }
+                }
+            }
+            // Rengi zamanla değiştir (Gökkuşağı suyu efekti için)
+            hueValue += 0.5; 
+            if(hueValue > 255) hueValue = 180; // Sadece mavi-mor aralığında kalsın
         }
 
-        canvas.addEventListener('mousemove', function(event){
-            mouse.x = event.x;
-            mouse.y = event.y;
-            // Fare hareket ettikçe 2 damla ekle
-            for(let i = 0; i < 2; i++){
-                particlesArray.push(new Particle());
-            }
-        });
-
-        // --- FİZİK MANTIĞI BURADA ---
-        class Particle {
-            constructor(){
-                this.x = mouse.x; // Farenin olduğu yerden başla
-                this.y = mouse.y;
-                // Rastgele boyut (3 ile 8 arası)
-                this.size = Math.random() * 5 + 3; 
-                // Hız (Rastgele sağa/sola ve yukarı/aşağı saçılma)
-                this.speedX = Math.random() * 3 - 1.5; 
-                this.speedY = Math.random() * 3 - 1.5; 
-                // Renk (Mavi tonları)
-                this.color = 'hsl(200, 100%, 50%)'; 
-            }
-            
-            update(){
-                this.x += this.speedX;
-                this.y += this.speedY;
+        // --- FİZİK HESAPLAMALARI ---
+        for (let i = 0; i < cols; i++) {
+            for (let j = 0; j < rows; j++) {
+                let state = grid[i][j];
                 
-                // YERÇEKİMİ ETKİSİ (Aşağı doğru hızlan)
-                this.speedY += 0.2; 
+                // Eğer bu hücrede su varsa (0 değilse)
+                if (state > 0) {
+                    let below = j + 1;
+                    let left = i - 1;
+                    let right = i + 1;
 
-                // Boyutu zamanla küçült (Buharlaşma efekti)
-                if (this.size > 0.2) this.size -= 0.1;
-            }
-            
-            draw(){
-                ctx.fillStyle = this.color;
-                ctx.beginPath();
-                ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
-                ctx.fill();
-            }
-        }
-
-        // Animasyon Döngüsü
-        function handleParticles(){
-            for (let i = 0; i < particlesArray.length; i++){
-                particlesArray[i].update();
-                particlesArray[i].draw();
-
-                // Çok küçülen parçacıkları sil (Hafızayı temizle)
-                if (particlesArray[i].size <= 0.3){
-                    particlesArray.splice(i, 1);
-                    i--;
+                    // 1. KURAL: Aşağısı boş mu?
+                    if (below < rows && grid[i][below] === 0) {
+                        nextGrid[i][below] = state; // Aşağı düş
+                    } 
+                    // 2. KURAL: Aşağısı doluysa, sol-alt veya sağ-alt boş mu? (Akışkanlık)
+                    else if (below < rows && left >= 0 && grid[left][below] === 0) {
+                         nextGrid[left][below] = state; // Sola kayarak düş
+                    } else if (below < rows && right < cols && grid[right][below] === 0) {
+                         nextGrid[right][below] = state; // Sağa kayarak düş
+                    }
+                    // 3. KURAL (YAYILMA): Aşağı tamamen doluysa yanlara git (Suyu kumdan ayıran özellik)
+                    else if (left >= 0 && grid[left][j] === 0) {
+                         nextGrid[left][j] = state; // Sola yayıl
+                    } else if (right < cols && grid[right][j] === 0) {
+                         nextGrid[right][j] = state; // Sağa yayıl
+                    }
+                    // Hiçbir yere gidemiyorsa olduğu yerde kal
+                    else {
+                        nextGrid[i][j] = state;
+                    }
+                    
+                    // Ekrana çiz
+                    ctx.fillStyle = `hsl(${state}, 100%, 50%)`;
+                    ctx.fillRect(i * w, j * w, w, w);
                 }
             }
         }
 
-        function animate(){
-            // Ekranda hafif bir iz bırakmak için tam temizleme yerine yarı saydam boyama yapıyoruz
-            // Bu satırı 'ctx.clearRect(0, 0, canvas.width, canvas.height);' yaparsan iz kalmaz.
-            ctx.fillStyle = 'rgba(26, 26, 26, 0.1)'; 
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
-            
-            handleParticles();
-            requestAnimationFrame(animate);
-        }
+        grid = nextGrid;
+        requestAnimationFrame(draw);
+    }
 
-        animate();
+    setup();
+    draw();
 
-    </script>
+    // Ekran boyutu değişirse resetle
+    window.addEventListener('resize', setup);
+
+</script>
+
 </body>
 </html>
