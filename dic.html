@@ -1,210 +1,336 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="tr">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dictionary App</title>
+    <title>Basit Texas Hold'em Poker</title>
     <style>
+        /* --- CSS TASARIMI --- */
         body {
-            font-family: Arial, sans-serif;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #2c3e50;
+            color: white;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+        }
+
+        h1 { margin-top: 10px; text-shadow: 2px 2px 4px #000; }
+
+        #poker-table {
+            background-color: #27ae60; /* Yeşil Masa Rengi */
+            border: 15px solid #5d4037; /* Ahşap Kenarlık */
+            border-radius: 100px;
+            width: 90%;
             max-width: 800px;
-            margin: 0 auto;
+            height: 500px;
+            position: relative;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
             padding: 20px;
-            background-color: #f4f4f4;
         }
-        h1 {
-            text-align: center;
-            color: #333;
-        }
-        .search-container {
+
+        .hand-area {
             display: flex;
             justify-content: center;
-            margin-bottom: 20px;
+            align-items: center;
+            height: 120px;
         }
-        input {
-            padding: 10px;
-            width: 250px;
-            border: 1px solid #ccc;
-            border-radius: 4px;
+
+        .community-area {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 120px;
+            background-color: rgba(0,0,0,0.1);
+            border-radius: 10px;
+            margin: 0 50px;
         }
+
+        /* Kart Tasarımı */
+        .card {
+            width: 70px;
+            height: 100px;
+            background-color: white;
+            border-radius: 5px;
+            margin: 0 5px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            font-weight: bold;
+            font-size: 20px;
+            box-shadow: 2px 2px 5px rgba(0,0,0,0.3);
+            position: relative;
+        }
+
+        .card.red { color: #c0392b; }
+        .card.black { color: #2c3e50; }
+
+        .card-back {
+            background: repeating-linear-gradient(
+                45deg,
+                #e74c3c,
+                #e74c3c 10px,
+                #c0392b 10px,
+                #c0392b 20px
+            );
+            color: transparent;
+        }
+
+        /* Kontrol Paneli */
+        #controls {
+            margin-top: 20px;
+            display: flex;
+            gap: 10px;
+        }
+
         button {
             padding: 10px 20px;
-            margin-left: 10px;
-            background-color: #007bff;
-            color: white;
-            border: none;
-            border-radius: 4px;
+            font-size: 16px;
             cursor: pointer;
+            background-color: #f39c12;
+            border: none;
+            border-radius: 5px;
+            color: white;
+            font-weight: bold;
+            transition: 0.2s;
         }
-        button:hover {
-            background-color: #0056b3;
-        }
-        .result-section {
-            margin-top: 20px;
-            background-color: white;
-            padding: 15px;
-            border-radius: 8px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-        }
-        .result-section h3 {
-            color: #007bff;
+
+        button:hover { background-color: #d35400; }
+        button:disabled { background-color: #95a5a6; cursor: not-allowed; }
+
+        #status-msg {
+            font-size: 1.2em;
             margin-bottom: 10px;
-        }
-        .result-section p {
-            margin: 5px 0;
-            line-height: 1.5;
-        }
-        .error {
-            color: red;
+            background: rgba(0,0,0,0.5);
+            padding: 10px;
+            border-radius: 5px;
+            min-width: 300px;
             text-align: center;
         }
+
+        .label {
+            position: absolute;
+            color: rgba(255,255,255,0.7);
+            font-size: 12px;
+            text-transform: uppercase;
+        }
+        #cpu-label { top: 10px; left: 20px; }
+        #player-label { bottom: 10px; left: 20px; }
+
     </style>
 </head>
 <body>
-    <h1>English Dictionary</h1>
-    <div class="search-container">
-        <input type="text" id="wordInput" placeholder="Enter a word (e.g., run)">
-        <button onclick="searchWord()">Search</button>
+
+    <h1>Texas Hold'em Poker</h1>
+    
+    <div id="status-msg">Oyuna başlamak için 'Dağıt' butonuna bas.</div>
+
+    <div id="poker-table">
+        <div id="cpu-label" class="label">Bilgisayar (CPU)</div>
+        
+        <div id="cpu-hand" class="hand-area"></div>
+
+        <div id="community-cards" class="community-area"></div>
+
+        <div id="player-hand" class="hand-area"></div>
+
+        <div id="player-label" class="label">Senin Elin</div>
     </div>
-    <div id="nouns" class="result-section" style="display: none;">
-        <h3>Nouns</h3>
-        <div id="nouns-content"></div>
+
+    <div id="controls">
+        <button id="btn-deal" onclick="startGame()">Dağıt</button>
+        <button id="btn-next" onclick="nextStep()" disabled>Sıradaki Kartlar (Check)</button>
+        <button id="btn-fold" onclick="fold()" disabled>Pas (Fold)</button>
     </div>
-    <div id="verbs" class="result-section" style="display: none;">
-        <h3>Verbs</h3>
-        <div id="verbs-content"></div>
-    </div>
-    <div id="adjectives" class="result-section" style="display: none;">
-        <h3>Adjectives</h3>
-        <div id="adjectives-content"></div>
-    </div>
-    <div id="others" class="result-section" style="display: none;">
-        <h3>Other Parts of Speech</h3>
-        <div id="others-content"></div>
-    </div>
-    <div id="error" class="error"></div>
 
     <script>
-        const OXFORD_APP_ID = 'YOUR_OXFORD_APP_ID'; // Oxford API App ID
-        const OXFORD_APP_KEY = 'YOUR_OXFORD_APP_KEY'; // Oxford API App Key
-        const MERRIAM_API_KEY = 'YOUR_MERRIAM_API_KEY'; // Merriam-Webster API Key
+        /* --- JAVASCRIPT MANTIĞI --- */
 
-        async function searchWord() {
-            const word = document.getElementById('wordInput').value.trim().toLowerCase();
-            const errorDiv = document.getElementById('error');
-            const sections = ['nouns', 'verbs', 'adjectives', 'others'];
-            sections.forEach(section => {
-                document.getElementById(section).style.display = 'none';
-                document.getElementById(`${section}-content`).innerHTML = '';
+        const suits = ['♠', '♥', '♦', '♣'];
+        const values = ['2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K', 'A'];
+        
+        let deck = [];
+        let playerHand = [];
+        let cpuHand = [];
+        let communityCards = [];
+        let stage = 0; // 0: Start, 1: Pre-flop, 2: Flop, 3: Turn, 4: River, 5: Showdown
+
+        // Deste oluşturma
+        function createDeck() {
+            deck = [];
+            for (let s of suits) {
+                for (let v of values) {
+                    deck.push({ suit: s, value: v, weight: values.indexOf(v) + 2 });
+                }
+            }
+        }
+
+        // Desteyi karıştırma
+        function shuffleDeck() {
+            for (let i = deck.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [deck[i], deck[j]] = [deck[j], deck[i]];
+            }
+        }
+
+        // Kart HTML'i oluşturma
+        function createCardHTML(card, hidden = false) {
+            const div = document.createElement('div');
+            div.className = 'card';
+            if (hidden) {
+                div.classList.add('card-back');
+            } else {
+                if (card.suit === '♥' || card.suit === '♦') div.classList.add('red');
+                else div.classList.add('black');
+                div.innerHTML = `<div>${card.value}</div><div>${card.suit}</div>`;
+            }
+            return div;
+        }
+
+        // Oyunu Başlatma
+        function startGame() {
+            createDeck();
+            shuffleDeck();
+            playerHand = [deck.pop(), deck.pop()];
+            cpuHand = [deck.pop(), deck.pop()];
+            communityCards = [];
+            stage = 1;
+
+            renderGame();
+            updateStatus("Kartlar dağıtıldı. Devam etmek için tıklayın.");
+            
+            document.getElementById('btn-deal').disabled = true;
+            document.getElementById('btn-next').disabled = false;
+            document.getElementById('btn-fold').disabled = false;
+            document.getElementById('btn-next').innerText = "Gör / Devam Et";
+        }
+
+        // Oyunu Çizme
+        function renderGame(showCpuCards = false) {
+            const playerDiv = document.getElementById('player-hand');
+            const cpuDiv = document.getElementById('cpu-hand');
+            const communityDiv = document.getElementById('community-cards');
+
+            playerDiv.innerHTML = '';
+            cpuDiv.innerHTML = '';
+            communityDiv.innerHTML = '';
+
+            // Oyuncu Kartları
+            playerHand.forEach(card => playerDiv.appendChild(createCardHTML(card)));
+
+            // CPU Kartları (Oyun bitmediyse gizli)
+            cpuHand.forEach(card => cpuDiv.appendChild(createCardHTML(card, !showCpuCards)));
+
+            // Yer Kartları
+            communityCards.forEach(card => communityDiv.appendChild(createCardHTML(card)));
+        }
+
+        // Sonraki Aşamaya Geçiş
+        function nextStep() {
+            if (stage === 1) { // Flop (3 kart)
+                communityCards.push(deck.pop(), deck.pop(), deck.pop());
+                stage = 2;
+                updateStatus("Flop açıldı.");
+            } else if (stage === 2) { // Turn (1 kart)
+                communityCards.push(deck.pop());
+                stage = 3;
+                updateStatus("Turn kartı açıldı.");
+            } else if (stage === 3) { // River (1 kart)
+                communityCards.push(deck.pop());
+                stage = 4;
+                document.getElementById('btn-next').innerText = "Elleri Aç (Showdown)";
+                updateStatus("River kartı açıldı. Son karar!");
+            } else if (stage === 4) { // Showdown
+                determineWinner();
+                stage = 5;
+                return; // Fonksiyondan çık
+            }
+            renderGame();
+        }
+
+        function fold() {
+            updateStatus("Pas geçtiniz. Bilgisayar kazandı.");
+            renderGame(true); // CPU kartlarını göster
+            endGame();
+        }
+
+        // Basit El Değerlendirmesi (Skorlama)
+        // Not: Bu kısım tam poker kuralları için çok karmaşıktır.
+        // Burada basitleştirilmiş bir "Ağırlıklı Skor" sistemi kullanıyoruz.
+        function calculateHandStrength(hand, community) {
+            const allCards = hand.concat(community);
+            // Kartları büyükten küçüğe sırala
+            allCards.sort((a, b) => b.weight - a.weight);
+
+            // Skor hesapla (Basit mantık: Çiftler, Renk vb. kontrolü)
+            // Gerçek bir poker oyununda burada 10 farklı el kontrolü yapılır.
+            // Prototip için: En yüksek kart + Çift var mı kontrolü.
+            
+            let score = 0;
+            let counts = {};
+            let suitsCount = {};
+
+            allCards.forEach(card => {
+                score += card.weight; // Yüksek kart puanı
+                counts[card.value] = (counts[card.value] || 0) + 1;
+                suitsCount[card.suit] = (suitsCount[card.suit] || 0) + 1;
             });
-            errorDiv.innerHTML = '';
 
-            if (!word) {
-                errorDiv.innerHTML = 'Please enter a word!';
-                return;
+            // Çift, Üçlü, Dörtlü Puanları
+            for (let val in counts) {
+                if (counts[val] === 2) score += 100; // Per
+                if (counts[val] === 3) score += 300; // Üçlü
+                if (counts[val] === 4) score += 700; // Kare
             }
 
-            try {
-                // Oxford API isteği
-                const oxfordResponse = await fetch(
-                    `https://od-api.oxforddictionaries.com/api/v2/entries/en-gb/${word}?fields=definitions,pronunciations,examples`,
-                    {
-                        headers: {
-                            'app_id': OXFORD_APP_ID,
-                            'app_key': OXFORD_APP_KEY
-                        }
-                    }
-                );
-                const oxfordData = await oxfordResponse.json();
+            // Flush (Renk) Puanı
+            for (let suit in suitsCount) {
+                if (suitsCount[suit] >= 5) score += 500;
+            }
 
-                // Merriam-Webster API isteği
-                const merriamResponse = await fetch(
-                    `https://www.dictionaryapi.com/api/v3/references/collegiate/json/${word}?key=${MERRIAM_API_KEY}`
-                );
-                const merriamData = await merriamResponse.json();
+            return score;
+        }
 
-                // Verileri işle
-                processData(oxfordData, merriamData, word);
-            } catch (error) {
-                errorDiv.innerHTML = 'An error occurred while fetching data!';
-                console.error(error);
+        function determineWinner() {
+            const playerScore = calculateHandStrength(playerHand, communityCards);
+            const cpuScore = calculateHandStrength(cpuHand, communityCards);
+
+            renderGame(true); // CPU kartlarını aç
+
+            let msg = "";
+            if (playerScore > cpuScore) {
+                msg = "Tebrikler! Sen Kazandın! 🎉";
+                document.getElementById('status-msg').style.backgroundColor = "#27ae60";
+            } else if (cpuScore > playerScore) {
+                msg = "Bilgisayar Kazandı. 😔";
+                document.getElementById('status-msg').style.backgroundColor = "#c0392b";
+            } else {
+                msg = "Berabere! 🤝";
+            }
+            updateStatus(msg);
+            endGame();
+        }
+
+        function endGame() {
+            document.getElementById('btn-deal').disabled = false;
+            document.getElementById('btn-next').disabled = true;
+            document.getElementById('btn-fold').disabled = true;
+            document.getElementById('btn-next').innerText = "Check";
+        }
+
+        function updateStatus(msg) {
+            document.getElementById('status-msg').innerText = msg;
+            // Rengi sıfırla (kazanma durumu hariç)
+            if(!msg.includes("Kazandın") && !msg.includes("Bilgisayar")) {
+                document.getElementById('status-msg').style.backgroundColor = "rgba(0,0,0,0.5)";
             }
         }
 
-        function processData(oxfordData, merriamData, word) {
-            const nouns = [];
-            const verbs = [];
-            const adjectives = [];
-            const others = [];
-
-            // Oxford verilerini işle
-            if (oxfordData.results) {
-                oxfordData.results.forEach(result => {
-                    result.lexicalEntries.forEach(entry => {
-                        const category = entry.lexicalCategory.text.toLowerCase();
-                        const senses = entry.entries[0].senses;
-                        const definitions = senses.map(sense => sense.definitions[0]).join('; ');
-                        const examples = senses.flatMap(sense => sense.examples?.map(ex => ex.text) || []);
-                        const item = {
-                            source: 'Oxford',
-                            definition: definitions,
-                            examples: examples
-                        };
-
-                        if (category === 'noun') nouns.push(item);
-                        else if (category === 'verb') verbs.push(item);
-                        else if (category === 'adjective') adjectives.push(item);
-                        else others.push(item);
-                    });
-                });
-            }
-
-            // Merriam-Webster verilerini işle
-            if (Array.isArray(merriamData) && merriamData[0]?.fl) {
-                merriamData.forEach(entry => {
-                    const category = entry.fl.toLowerCase();
-                    const definitions = entry.shortdef.join('; ');
-                    const examples = entry.suppl?.examples?.map(ex => ex.t.replace(/{it}/g, '')) || [];
-                    const item = {
-                        source: 'Merriam-Webster',
-                        definition: definitions,
-                        examples: examples
-                    };
-
-                    if (category === 'noun') nouns.push(item);
-                    else if (category === 'verb') verbs.push(item);
-                    else if (category === 'adjective') adjectives.push(item);
-                    else others.push(item);
-                });
-            }
-
-            // Sonuçları göster
-            displayResults('nouns', nouns);
-            displayResults('verbs', verbs);
-            displayResults('adjectives', adjectives);
-            displayResults('others', others);
-
-            // Eğer hiç sonuç yoksa hata göster
-            if (!nouns.length && !verbs.length && !adjectives.length && !others.length) {
-                document.getElementById('error').innerHTML = 'No results found for this word!';
-            }
-        }
-
-        function displayResults(section, items) {
-            if (items.length === 0) return;
-            const contentDiv = document.getElementById(`${section}-content`);
-            const sectionDiv = document.getElementById(section);
-            sectionDiv.style.display = 'block';
-
-            items.forEach(item => {
-                const div = document.createElement('div');
-                div.innerHTML = `
-                    <p><strong>${item.source}:</strong> ${item.definition}</p>
-                    ${item.examples.length ? `<p><em>Examples:</em> ${item.examples.join('; ')}</p>` : ''}
-                `;
-                contentDiv.appendChild(div);
-            });
-        }
     </script>
 </body>
 </html>
