@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Modern Blackjack 21</title>
+    <title>Sesli Casino Blackjack</title>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap');
 
@@ -25,16 +25,40 @@
             justify-content: center;
             color: white;
             overflow-x: hidden;
+            user-select: none;
         }
 
         h1 {
             font-size: 2.5rem;
             text-shadow: 0 4px 6px rgba(0,0,0,0.4);
-            margin-bottom: 10px;
-            color: #ffd700; /* Altın rengi */
+            margin-bottom: 5px;
+            color: #ffd700;
         }
 
-        /* Oyun Alanı */
+        .header-controls {
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        /* Ses Butonu */
+        #btn-sound {
+            background: rgba(0,0,0,0.3);
+            border: 1px solid rgba(255,255,255,0.2);
+            padding: 8px 15px;
+            border-radius: 20px;
+            color: white;
+            cursor: pointer;
+            font-size: 0.9rem;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            transition: background 0.3s;
+        }
+        #btn-sound:hover { background: rgba(0,0,0,0.5); }
+        #btn-sound.muted { opacity: 0.5; text-decoration: line-through; }
+
         .game-area {
             width: 90%;
             max-width: 800px;
@@ -50,7 +74,7 @@
             border-radius: 15px;
             box-shadow: inset 0 0 20px rgba(0,0,0,0.3);
             min-height: 200px;
-            transition: all 0.3s ease;
+            position: relative;
         }
 
         .score-board {
@@ -61,15 +85,14 @@
             background: rgba(0,0,0,0.5);
             padding: 5px 15px;
             border-radius: 20px;
+            border: 1px solid #ffd700;
         }
 
-        /* Kart Alanı */
         .cards-container {
             display: flex;
             justify-content: center;
             flex-wrap: wrap;
-            gap: 10px;
-            perspective: 1000px;
+            gap: 10px; /* Kartlar arası boşluk */
         }
 
         /* Kart Tasarımı */
@@ -83,27 +106,29 @@
             justify-content: space-between;
             padding: 10px;
             box-sizing: border-box;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+            box-shadow: -5px 5px 10px rgba(0,0,0,0.4);
             color: #333;
             font-weight: bold;
             position: relative;
-            animation: dealCard 0.5s ease-out forwards;
-            user-select: none;
+            animation: dealCard 0.4s ease-out forwards;
+            transition: transform 0.2s;
         }
+
+        .card:hover { transform: translateY(-10px); }
 
         @keyframes dealCard {
-            from { opacity: 0; transform: translateY(-50px) rotateY(90deg); }
-            to { opacity: 1; transform: translateY(0) rotateY(0); }
+            from { opacity: 0; transform: translateY(-100px) translateX(50px) rotate(10deg); }
+            to { opacity: 1; transform: translateY(0) translateX(0) rotate(0); }
         }
 
-        .card.red { color: #e74c3c; }
-        .card.black { color: #2c3e50; }
+        .card.red { color: #d63031; }
+        .card.black { color: #2d3436; }
 
-        .card-value-top { font-size: 1.2rem; align-self: flex-start; }
-        .card-suit { font-size: 2.5rem; align-self: center; }
-        .card-value-bottom { font-size: 1.2rem; align-self: flex-end; transform: rotate(180deg); }
+        .card-value-top { font-size: 1.4rem; align-self: flex-start; line-height: 1; }
+        .card-suit { font-size: 2.8rem; align-self: center; line-height: 1; }
+        .card-value-bottom { font-size: 1.4rem; align-self: flex-end; transform: rotate(180deg); line-height: 1; }
 
-        /* Butonlar ve Kontroller */
+        /* Butonlar */
         .controls {
             display: flex;
             gap: 15px;
@@ -111,28 +136,31 @@
             justify-content: center;
         }
 
-        button {
-            padding: 12px 30px;
+        button.action-btn {
+            padding: 12px 35px;
             font-size: 1rem;
             font-weight: bold;
             border: none;
             border-radius: 30px;
             cursor: pointer;
-            transition: transform 0.2s, box-shadow 0.2s;
+            transition: all 0.2s;
             font-family: 'Poppins', sans-serif;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: white;
         }
 
-        button:active { transform: scale(0.95); }
-
-        #btn-hit { background: #3498db; color: white; box-shadow: 0 4px 0 #2980b9; }
-        #btn-stand { background: #e67e22; color: white; box-shadow: 0 4px 0 #d35400; }
-        #btn-new { background: #2ecc71; color: white; box-shadow: 0 4px 0 #27ae60; display: none; }
+        button.action-btn:active { transform: scale(0.95); }
+        
+        #btn-hit { background: linear-gradient(to bottom, #3498db, #2980b9); box-shadow: 0 4px 0 #1c5980; }
+        #btn-stand { background: linear-gradient(to bottom, #e67e22, #d35400); box-shadow: 0 4px 0 #a04000; }
+        #btn-new { background: linear-gradient(to bottom, #2ecc71, #27ae60); box-shadow: 0 4px 0 #1e8449; display: none; }
         
         button:disabled {
             background: #95a5a6;
             box-shadow: none;
             cursor: not-allowed;
-            opacity: 0.7;
+            opacity: 0.6;
         }
 
         #message-area {
@@ -140,26 +168,26 @@
             margin-top: 10px;
             font-size: 1.5rem;
             font-weight: bold;
-            text-shadow: 0 2px 4px rgba(0,0,0,0.5);
+            text-align: center;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.8);
             color: #fff;
+            transition: color 0.3s;
         }
 
-        /* Mobil Uyum */
         @media (max-width: 600px) {
             :root { --card-width: 70px; --card-height: 100px; }
             h1 { font-size: 1.8rem; }
             .card-suit { font-size: 1.8rem; }
+            .card-value-top, .card-value-bottom { font-size: 1rem; }
         }
     </style>
 </head>
 <body>
 
-    
-
-[Image of blackjack table layout]
-
-
-    <h1>Blackjack 21</h1>
+    <div class="header-controls">
+        <h1>Blackjack 21</h1>
+        <button id="btn-sound" onclick="toggleSound()">🔊 Ses Açık</button>
+    </div>
 
     <div class="game-area">
         <div class="hand-section" id="dealer-section">
@@ -176,13 +204,98 @@
     </div>
 
     <div class="controls">
-        <button id="btn-hit" onclick="hit()">Kart Çek</button>
-        <button id="btn-stand" onclick="stand()">Kal (Stand)</button>
-        <button id="btn-new" onclick="startGame()">Yeni Oyun</button>
+        <button id="btn-hit" class="action-btn" onclick="hit()">Kart Çek</button>
+        <button id="btn-stand" class="action-btn" onclick="stand()">Kal</button>
+        <button id="btn-new" class="action-btn" onclick="startGame()">Yeni Oyun</button>
     </div>
 
     <script>
-        // Oyun Değişkenleri
+        /* --- SES SİSTEMİ (Web Audio API) --- */
+        // Dışarıdan dosya yüklemek yerine sesleri kodla üretiyoruz.
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        let isSoundOn = true;
+
+        function toggleSound() {
+            isSoundOn = !isSoundOn;
+            const btn = document.getElementById('btn-sound');
+            if (isSoundOn) {
+                btn.innerText = "🔊 Ses Açık";
+                btn.classList.remove('muted');
+            } else {
+                btn.innerText = "🔇 Ses Kapalı";
+                btn.classList.add('muted');
+            }
+        }
+
+        function playTone(freq, type, duration, delay = 0) {
+            if (!isSoundOn) return;
+            const osc = audioCtx.createOscillator();
+            const gainNode = audioCtx.createGain();
+            
+            osc.type = type;
+            osc.frequency.setValueAtTime(freq, audioCtx.currentTime + delay);
+            
+            gainNode.gain.setValueAtTime(0.1, audioCtx.currentTime + delay);
+            gainNode.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + delay + duration);
+
+            osc.connect(gainNode);
+            gainNode.connect(audioCtx.destination);
+            
+            osc.start(audioCtx.currentTime + delay);
+            osc.stop(audioCtx.currentTime + delay + duration);
+        }
+
+        function playCardSound() {
+            if (!isSoundOn) return;
+            // Kart sesi için beyaz gürültü (white noise) simülasyonu
+            const bufferSize = audioCtx.sampleRate * 0.1; // 0.1 saniye
+            const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+            const data = buffer.getChannelData(0);
+
+            for (let i = 0; i < bufferSize; i++) {
+                data[i] = Math.random() * 2 - 1;
+            }
+
+            const noise = audioCtx.createBufferSource();
+            noise.buffer = buffer;
+            const gainNode = audioCtx.createGain();
+            
+            // Filtre ekleyerek kağıt hışırtısına benzetelim
+            const filter = audioCtx.createBiquadFilter();
+            filter.type = 'lowpass';
+            filter.frequency.value = 1000;
+
+            gainNode.gain.setValueAtTime(0.3, audioCtx.currentTime);
+            gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.1);
+
+            noise.connect(filter);
+            filter.connect(gainNode);
+            gainNode.connect(audioCtx.destination);
+            noise.start();
+        }
+
+        function playWinSound() {
+            // Zafer melodisi (Majör Arpej)
+            playTone(523.25, 'sine', 0.3, 0);   // Do
+            playTone(659.25, 'sine', 0.3, 0.1); // Mi
+            playTone(783.99, 'sine', 0.6, 0.2); // Sol
+            playTone(1046.50, 'square', 0.4, 0.3); // İnce Do (Vurgu)
+        }
+
+        function playLoseSound() {
+            // Kaybetme sesi (Pesleşen tonlar)
+            playTone(300, 'sawtooth', 0.3, 0);
+            playTone(250, 'sawtooth', 0.3, 0.2);
+            playTone(150, 'sawtooth', 0.6, 0.4);
+        }
+
+        function playChipSound() {
+            // Blackjack sesi
+            playTone(1200, 'triangle', 0.1, 0);
+            playTone(1500, 'triangle', 0.1, 0.1);
+        }
+
+        /* --- OYUN MANTIĞI --- */
         const suits = ["♠", "♥", "♦", "♣"];
         const values = ["2", "3", "4", "5", "6", "7", "8", "9", "10", "J", "Q", "K", "A"];
         let deck = [];
@@ -190,7 +303,6 @@
         let dealerHand = [];
         let gameOver = false;
 
-        // HTML Elementleri
         const dealerCardsDiv = document.getElementById('dealer-cards');
         const playerCardsDiv = document.getElementById('player-cards');
         const dealerScoreSpan = document.getElementById('dealer-score');
@@ -200,8 +312,10 @@
         const btnStand = document.getElementById('btn-stand');
         const btnNew = document.getElementById('btn-new');
 
-        // Oyunu Başlat
         function startGame() {
+            // Tarayıcı ses politikası için context'i başlat
+            if (audioCtx.state === 'suspended') { audioCtx.resume(); }
+
             deck = createDeck();
             shuffleDeck(deck);
             playerHand = [];
@@ -209,21 +323,23 @@
             gameOver = false;
             
             messageArea.innerText = "";
+            messageArea.style.color = "white";
             btnHit.disabled = false;
             btnStand.disabled = false;
             btnNew.style.display = "none";
 
-            // İlk kartları dağıt
+            // Animasyonlu dağıtım için gecikmeli fonksiyon
             dealCard(playerHand);
-            dealCard(dealerHand);
-            dealCard(playerHand);
-            dealCard(dealerHand);
+            setTimeout(() => dealCard(dealerHand), 200);
+            setTimeout(() => dealCard(playerHand), 400);
+            setTimeout(() => {
+                dealCard(dealerHand);
+                checkForBlackjack(); // Dağıtım bitince blackjack kontrolü
+            }, 600);
 
             renderGame();
-            checkForBlackjack();
         }
 
-        // Deste Oluşturma
         function createDeck() {
             let newDeck = [];
             for (let suit of suits) {
@@ -237,7 +353,6 @@
             return newDeck;
         }
 
-        // Desteyi Karıştırma (Fisher-Yates Algoritması)
         function shuffleDeck(deck) {
             for (let i = deck.length - 1; i > 0; i--) {
                 const j = Math.floor(Math.random() * (i + 1));
@@ -245,47 +360,46 @@
             }
         }
 
-        // Kart Çekme Fonksiyonu
         function dealCard(hand) {
             const card = deck.pop();
             hand.push(card);
+            playCardSound(); // Şak sesi
+            renderGame();
         }
 
-        // Oyuncunun Kart İstemesi (Hit)
         function hit() {
             if (gameOver) return;
             dealCard(playerHand);
-            renderGame();
             
             if (calculateScore(playerHand) > 21) {
-                endGame("Kaybettin! (Bust)");
+                playLoseSound();
+                endGame("Kaybettin! (Bust)", "#e74c3c");
             }
         }
 
-        // Oyuncunun Durması (Stand)
         function stand() {
             if (gameOver) return;
             
-            // Krupiye mantığı: 17'den küçükse kart çekmek zorunda
-            while (calculateScore(dealerHand) < 17) {
-                dealCard(dealerHand);
-            }
-            
-            renderGame(true); // Krupiyenin tüm kartlarını göster
-            determineWinner();
+            // Krupiye kart çekerken her kart arası minik bekleme yapalım ki sesler karışmasın
+            let interval = setInterval(() => {
+                let dScore = calculateScore(dealerHand);
+                if (dScore < 17) {
+                    dealCard(dealerHand);
+                } else {
+                    clearInterval(interval);
+                    renderGame(true);
+                    determineWinner();
+                }
+            }, 800);
         }
 
-        // Puan Hesaplama
         function calculateScore(hand) {
             let score = 0;
             let aceCount = 0;
-
             for (let card of hand) {
                 score += card.weight;
                 if (card.value === "A") aceCount++;
             }
-
-            // As kontrolü (Eğer toplam 21'i geçerse As 1 sayılır)
             while (score > 21 && aceCount > 0) {
                 score -= 10;
                 aceCount--;
@@ -293,77 +407,73 @@
             return score;
         }
 
-        // Kazananı Belirleme
         function determineWinner() {
             const pScore = calculateScore(playerHand);
             const dScore = calculateScore(dealerHand);
 
             if (dScore > 21) {
-                endGame("Krupiye Battı! Kazandın! 🎉");
+                playWinSound();
+                endGame("Krupiye Battı! Kazandın! 🎉", "#2ecc71");
             } else if (pScore > dScore) {
-                endGame("Kazandın! 🎉");
+                playWinSound();
+                endGame("Kazandın! 🎉", "#2ecc71");
             } else if (pScore < dScore) {
-                endGame("Krupiye Kazandı.");
+                playLoseSound();
+                endGame("Krupiye Kazandı.", "#e74c3c");
             } else {
-                endGame("Berabere (Push)");
+                endGame("Berabere (Push)", "#f1c40f");
             }
         }
 
-        // Anlık Blackjack Kontrolü (İlk 2 kartta)
         function checkForBlackjack() {
             const pScore = calculateScore(playerHand);
             if (pScore === 21) {
-                endGame("BLACKJACK! Kazandın! 🏆");
+                playChipSound();
+                playWinSound();
+                endGame("BLACKJACK! Kazandın! 🏆", "#ffd700");
             }
         }
 
-        // Oyunu Bitirme
-        function endGame(message) {
+        function endGame(message, color = "white") {
             gameOver = true;
             messageArea.innerText = message;
+            messageArea.style.color = color;
             btnHit.disabled = true;
             btnStand.disabled = true;
             btnNew.style.display = "inline-block";
-            renderGame(true); // Oyun bitince krupiyenin kartını aç
+            renderGame(true);
         }
 
-        // Ekrana Çizdirme (Render)
         function renderGame(showDealerAll = false) {
-            // Oyuncu Kartları
             playerCardsDiv.innerHTML = "";
             playerHand.forEach(card => playerCardsDiv.appendChild(createCardElement(card)));
             playerScoreSpan.innerText = calculateScore(playerHand);
 
-            // Krupiye Kartları
             dealerCardsDiv.innerHTML = "";
             dealerHand.forEach((card, index) => {
-                // Oyun devam ediyorsa krupiyenin ilk kartını gizle (Kapalı kart mantığı)
                 if (index === 0 && !showDealerAll) {
                     const hiddenCard = document.createElement('div');
                     hiddenCard.className = 'card';
                     hiddenCard.style.background = `linear-gradient(135deg, #b00 25%, #900 25%, #900 50%, #b00 50%, #b00 75%, #900 75%, #900 100%)`;
                     hiddenCard.style.backgroundSize = "20px 20px";
                     hiddenCard.style.border = "2px solid white";
+                    hiddenCard.style.boxShadow = "-5px 5px 10px rgba(0,0,0,0.4)";
                     dealerCardsDiv.appendChild(hiddenCard);
                 } else {
                     dealerCardsDiv.appendChild(createCardElement(card));
                 }
             });
 
-            // Krupiye skoru (Gizliyken sadece açık kartı göster veya soru işareti koy)
             if (!showDealerAll) {
-                // Sadece 2. kartın değerini kabaca gösteririz veya gizleriz, basitlik için '?' diyelim
                 dealerScoreSpan.innerText = "?"; 
             } else {
                 dealerScoreSpan.innerText = calculateScore(dealerHand);
             }
         }
 
-        // Kart HTML Elementi Oluşturucu
         function createCardElement(card) {
             const div = document.createElement('div');
             div.className = `card ${card.suit === '♥' || card.suit === '♦' ? 'red' : 'black'}`;
-            
             div.innerHTML = `
                 <div class="card-value-top">${card.value}</div>
                 <div class="card-suit">${card.suit}</div>
@@ -372,8 +482,14 @@
             return div;
         }
 
-        // Sayfa yüklendiğinde oyunu başlat
-        window.onload = startGame;
+        // İlk açılışta kart dağıtmadan bekle, "Yeni Oyun" ile başlat
+        // Otomatik başlama yerine buton gösterelim ki ses context'i kullanıcı etkileşimiyle başlasın
+        window.onload = () => {
+             btnHit.disabled = true;
+             btnStand.disabled = true;
+             messageArea.innerText = "Başlamak için 'Yeni Oyun' butonuna basın";
+             btnNew.style.display = "inline-block";
+        };
 
     </script>
 </body>
