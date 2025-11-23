@@ -2,32 +2,455 @@
 <html lang="tr">
 <head>
     <meta charset="UTF-8">
-    <title>Matrix Rain Effect</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Türk Pokeri - JS Edition</title>
     <style>
+        /* --- TASARIM VE ANİMASYONLAR --- */
+        :root {
+            --bg-color: #2c3e50;
+            --table-color: #277714; /* Poker masası yeşili */
+            --card-width: 80px;
+            --card-height: 112px;
+        }
+
         body {
             margin: 0;
-            padding: 0;
-            background-color: black;
-            overflow: hidden; /* Kaydırma çubuklarını gizle */
+            background-color: var(--bg-color);
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
             height: 100vh;
+            color: white;
+            overflow: hidden;
         }
-        canvas {
-            display: block;
+
+        #game-table {
+            position: relative;
+            width: 90%;
+            max-width: 800px;
+            height: 500px;
+            background-color: var(--table-color);
+            border: 10px solid #4a3b2a;
+            border-radius: 100px;
+            box-shadow: inset 0 0 50px rgba(0,0,0,0.6), 0 20px 50px rgba(0,0,0,0.5);
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            padding: 40px;
+        }
+
+        /* Alanlar */
+        .hand-area {
+            height: 140px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            position: relative;
+        }
+        
+        .player-label {
+            position: absolute;
+            left: 10px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: rgba(0,0,0,0.4);
+            padding: 5px 10px;
+            border-radius: 5px;
+            font-weight: bold;
+        }
+
+        /* Kart Stili */
+        .card {
+            width: var(--card-width);
+            height: var(--card-height);
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 2px 2px 10px rgba(0,0,0,0.3);
+            margin: 0 5px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            padding: 5px;
+            box-sizing: border-box;
+            font-weight: bold;
+            font-size: 18px;
+            cursor: pointer;
+            transition: transform 0.3s, margin-top 0.3s;
+            user-select: none;
+            position: relative;
+        }
+
+        .card.selected {
+            margin-top: -30px; /* Seçilince yukarı çıkar */
+            box-shadow: 0 0 15px gold;
+            border: 2px solid gold;
+        }
+
+        .card.red { color: #e74c3c; }
+        .card.black { color: #2c3e50; }
+
+        .card-center {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 36px;
+        }
+
+        /* Kart Arkası */
+        .card-back {
+            background: repeating-linear-gradient(
+                45deg,
+                #606dbc,
+                #606dbc 10px,
+                #465298 10px,
+                #465298 20px
+            );
+            border: 2px solid white;
+        }
+        .card-back * { display: none; }
+
+        /* Kontrol Paneli */
+        #controls {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            text-align: center;
+            z-index: 10;
+        }
+
+        button {
+            padding: 12px 24px;
+            font-size: 18px;
+            background: #f1c40f;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            color: #2c3e50;
+            font-weight: bold;
+            box-shadow: 0 4px 0 #d35400;
+            transition: all 0.1s;
+            margin: 5px;
+        }
+
+        button:active {
+            transform: translateY(4px);
+            box-shadow: none;
+        }
+        button:disabled {
+            background: #95a5a6;
+            box-shadow: none;
+            cursor: not-allowed;
+        }
+
+        #status-text {
+            font-size: 24px;
+            text-shadow: 2px 2px 4px black;
+            margin-bottom: 10px;
+            background: rgba(0,0,0,0.6);
+            padding: 5px 15px;
+            border-radius: 10px;
+        }
+
+        /* Animasyon Sınıfları */
+        .deal-anim {
+            animation: dealIn 0.5s ease-out forwards;
+        }
+
+        @keyframes dealIn {
+            from { opacity: 0; transform: translateY(-100px) scale(0.5); }
+            to { opacity: 1; transform: translateY(0) scale(1); }
         }
     </style>
 </head>
 <body>
 
-    <canvas id="matrixCanvas"></canvas>
+    <div id="game-table">
+        <div class="hand-area" id="cpu-hand">
+            <div class="player-label">CPU</div>
+            </div>
+
+        <div id="controls">
+            <div id="status-text">Oyuna Başla</div>
+            <button id="btn-action" onclick="startGame()">Dağıt</button>
+        </div>
+
+        <div class="hand-area" id="player-hand">
+            <div class="player-label">SEN</div>
+            </div>
+    </div>
 
     <script>
-        const canvas = document.getElementById('matrixCanvas');
-        const ctx = canvas.getContext('2d');
+        /* --- SES EFEKTLERİ (Web Audio API) --- */
+        // Harici dosya yüklememek için sesleri kodla üretiyoruz.
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
 
-        // 1. Canvası Tam Ekran Yap
-        canvas.width = window.innerWidth;
-        canvas.height = window.innerHeight;
+        function playTone(freq, type, duration) {
+            if(audioCtx.state === 'suspended') audioCtx.resume();
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.type = type;
+            osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+            gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + duration);
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            osc.start();
+            osc.stop(audioCtx.currentTime + duration);
+        }
 
-        // 2. Matrix Karakter Seti
-        // Katakana (Japonca), Latin harfleri ve Rakamlar karışık
-        const katakana = 'アァカサタナハマヤャラワガザ
+        function soundDeal() { playTone(600, 'sine', 0.1); } // Kart sesi (tık)
+        function soundClick() { playTone(400, 'triangle', 0.05); } // Tıklama
+        function soundWin() { 
+            playTone(400, 'sine', 0.1); 
+            setTimeout(() => playTone(600, 'sine', 0.2), 100);
+            setTimeout(() => playTone(800, 'sine', 0.4), 200);
+        }
+        function soundLose() {
+            playTone(300, 'sawtooth', 0.3);
+            setTimeout(() => playTone(200, 'sawtooth', 0.4), 200);
+        }
+
+        /* --- OYUN MANTIĞI --- */
+        // Türk Pokeri Destesi: Genelde A, K, Q, J, 10, 9, 8, 7 (32 Kart) veya 6 (36 Kart).
+        // Biz 36 kartlık desteyi kullanacağız.
+        const SUITS = ['♥', '♠', '♦', '♣']; // Kupa, Maça, Karo, Sinek
+        const RANKS = ['6', '7', '8', '9', '10', 'J', 'Q', 'K', 'A'];
+        
+        let deck = [];
+        let playerHand = [];
+        let cpuHand = [];
+        let gameState = 'IDLE'; // IDLE, DEAL, SWAP, SHOWDOWN
+
+        // DOM Elementleri
+        const elPlayerHand = document.getElementById('player-hand');
+        const elCpuHand = document.getElementById('cpu-hand');
+        const btnAction = document.getElementById('btn-action');
+        const elStatus = document.getElementById('status-text');
+
+        // Desteyi Oluştur
+        function createDeck() {
+            deck = [];
+            for(let s of SUITS) {
+                for(let r of RANKS) {
+                    deck.push({ suit: s, rank: r, value: RANKS.indexOf(r) + 6, selected: false });
+                }
+            }
+        }
+
+        // Desteyi Karıştır
+        function shuffleDeck() {
+            for (let i = deck.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [deck[i], deck[j]] = [deck[j], deck[i]];
+            }
+        }
+
+        // Oyunu Başlat
+        function startGame() {
+            soundClick();
+            createDeck();
+            shuffleDeck();
+            playerHand = [];
+            cpuHand = [];
+            
+            // 5'er kart dağıt
+            for(let i=0; i<5; i++) {
+                playerHand.push(deck.pop());
+                cpuHand.push(deck.pop());
+            }
+
+            // Kartları sıraya diz (Büyükten küçüğe - Görsel düzen için)
+            sortHand(playerHand); 
+
+            gameState = 'SWAP';
+            elStatus.innerText = "Değiştirmek istediğin kartları seç";
+            btnAction.innerText = "Kartları Değiştir (veya Pas)";
+            btnAction.onclick = swapPhase;
+            
+            renderHands(false); // Kartları çiz, CPU kapalı
+            
+            // Dağıtma efekti sesi (biraz gecikmeli seri ses)
+            for(let i=0; i<5; i++) setTimeout(soundDeal, i*100);
+        }
+
+        // Kart Değiştirme Aşaması
+        function swapPhase() {
+            soundClick();
+            
+            // 1. Oyuncu seçili kartları atar, yenisini alır
+            const newHand = playerHand.filter(c => !c.selected);
+            const countNeeded = 5 - newHand.length;
+            
+            for(let i=0; i<countNeeded; i++) {
+                newHand.push(deck.pop());
+            }
+            playerHand = newHand;
+            sortHand(playerHand);
+
+            // 2. CPU Mantığı (Basit Yapay Zeka)
+            // Eğer elinde Per (Çift) yoksa rastgele 2 kart değiştirir.
+            // Varsa değiştirmez (Risk almaz).
+            if(!hasPair(cpuHand)) {
+                cpuHand.pop();
+                cpuHand.pop();
+                cpuHand.push(deck.pop());
+                cpuHand.push(deck.pop());
+            }
+
+            gameState = 'SHOWDOWN';
+            elStatus.innerText = "Sonuçlar Karşılaştırılıyor...";
+            btnAction.innerText = "Tekrar Oyna";
+            btnAction.onclick = startGame;
+
+            renderHands(true); // CPU kartlarını AÇ
+            determineWinner();
+        }
+
+        // Kazananı Belirle
+        function determineWinner() {
+            const pScore = evaluateHand(playerHand);
+            const cScore = evaluateHand(cpuHand);
+            
+            let msg = "";
+            if(pScore.score > cScore.score) {
+                msg = "KAZANDIN! (" + pScore.name + ")";
+                soundWin();
+                elStatus.style.color = "#2ecc71";
+            } else if (cScore.score > pScore.score) {
+                msg = "KAYBETTİN... (" + cScore.name + ")";
+                soundLose();
+                elStatus.style.color = "#e74c3c";
+            } else {
+                // Eşitlik durumu (Basitlik için yüksek karta bakıyoruz)
+                msg = "BERABERE!";
+                elStatus.style.color = "white";
+            }
+            elStatus.innerText = msg;
+        }
+
+        // El Değerlendirme Algoritması (Türk Pokeri Kuralları)
+        // Sıralama: Floş(Royal) > Kare > Renk > Ful > Kent > Üçlü > Döper > Per > Yüksek
+        // Dikkat: Türk Pokerinde "Renk" (Flush), "Ful"den (Full House) üstündür!
+        function evaluateHand(hand) {
+            // Önce value'ları alıp sıralayalım
+            let values = hand.map(c => c.value).sort((a,b) => a-b);
+            let suits = hand.map(c => c.suit);
+            
+            const isFlush = suits.every(s => s === suits[0]);
+            
+            // Kent (Straight) kontrolü
+            let isStraight = true;
+            for(let i=0; i<4; i++) {
+                if(values[i+1] !== values[i] + 1) isStraight = false;
+            }
+            // A, K, Q, J, 10 özel durumu (En büyük kent)
+            if(!isStraight && values[0]===10 && values[4]===14) isStraight = true; // 10-A
+            
+            // Tekrarlayan kart sayıları (Frekans)
+            const counts = {};
+            values.forEach(x => { counts[x] = (counts[x] || 0) + 1; });
+            const countsValues = Object.values(counts);
+
+            // Puanlama (Base Score + High Card)
+            // Floş Royal / Sıralı Floş: 900
+            if(isFlush && isStraight) return { score: 900 + values[4], name: "Sıralı Floş" };
+            
+            // Kare: 800
+            if(countsValues.includes(4)) return { score: 800 + getHighByCount(counts, 4), name: "Kare" };
+            
+            // Renk (Flush): 700 (Türk pokerinde Fulden büyük)
+            if(isFlush) return { score: 700 + values[4], name: "Renk" };
+            
+            // Ful: 600
+            if(countsValues.includes(3) && countsValues.includes(2)) return { score: 600 + getHighByCount(counts, 3), name: "Ful" };
+            
+            // Kent (Straight): 500
+            if(isStraight) return { score: 500 + values[4], name: "Kent" };
+            
+            // Üçlü: 400
+            if(countsValues.includes(3)) return { score: 400 + getHighByCount(counts, 3), name: "Üçlü" };
+            
+            // Döper: 300
+            if(countsValues.filter(x => x===2).length === 2) return { score: 300 + getHighByCount(counts, 2), name: "Döper" };
+            
+            // Per: 200
+            if(countsValues.includes(2)) return { score: 200 + getHighByCount(counts, 2), name: "Per" };
+            
+            // Yüksek Kart: 100
+            return { score: 100 + values[4], name: "Yüksek Kart" };
+        }
+
+        // Yardımcı: Belirli sayıda tekrar eden en büyük kartı bul
+        function getHighByCount(counts, n) {
+            let max = 0;
+            for(let [k, v] of Object.entries(counts)) {
+                if(v === n) max = Math.max(max, parseInt(k));
+            }
+            return max;
+        }
+
+        // Basit Yapay Zeka Kontrolü (Per var mı?)
+        function hasPair(hand) {
+            let values = hand.map(c => c.value);
+            const counts = {};
+            values.forEach(x => { counts[x] = (counts[x] || 0) + 1; });
+            return Object.values(counts).includes(2) || Object.values(counts).includes(3);
+        }
+
+        function sortHand(hand) {
+            hand.sort((a, b) => a.value - b.value);
+        }
+
+        // Ekrana Çizme
+        function renderHands(showCpu) {
+            // Oyuncu Eli
+            elPlayerHand.innerHTML = '<div class="player-label">SEN</div>';
+            playerHand.forEach((card, index) => {
+                const div = createCardDiv(card, true);
+                // Tıklama olayı (Sadece kart değişimi aşamasında)
+                div.onclick = () => {
+                    if(gameState === 'SWAP') {
+                        card.selected = !card.selected;
+                        soundClick();
+                        renderHands(false);
+                    }
+                };
+                elPlayerHand.appendChild(div);
+            });
+
+            // CPU Eli
+            elCpuHand.innerHTML = '<div class="player-label">CPU</div>';
+            cpuHand.forEach((card, index) => {
+                // showCpu true ise kartı açık göster, yoksa kapalı
+                if(showCpu) {
+                    elCpuHand.appendChild(createCardDiv(card, false));
+                } else {
+                    const back = document.createElement('div');
+                    back.className = 'card card-back deal-anim';
+                    back.style.animationDelay = (index * 0.1) + 's';
+                    elCpuHand.appendChild(back);
+                }
+            });
+        }
+
+        function createCardDiv(card, isInteractive) {
+            const div = document.createElement('div');
+            const colorClass = (card.suit === '♥' || card.suit === '♦') ? 'red' : 'black';
+            div.className = `card ${colorClass} deal-anim`;
+            if(card.selected) div.classList.add('selected');
+            
+            div.innerHTML = `
+                <div style="align-self:flex-start">${card.rank}<br>${card.suit}</div>
+                <div class="card-center">${card.suit}</div>
+                <div style="align-self:flex-end; transform: rotate(180deg);">${card.rank}<br>${card.suit}</div>
+            `;
+            return div;
+        }
+
+    </script>
+</body>
+</html>
