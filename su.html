@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <title>Su Simülasyonu</title>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden; /* Kaydırma çubuklarını gizle */
+            background-color: #1a1a1a; /* Koyu arka plan */
+            font-family: sans-serif;
+        }
+        canvas {
+            display: block;
+        }
+        .info {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            color: white;
+            pointer-events: none; /* Yazının tıklamayı engellememesi için */
+            background: rgba(0,0,0,0.5);
+            padding: 10px;
+            border-radius: 5px;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="info">
+        <h3>Su Efekti</h3>
+        <p>Farenizi ekranda gezdirin veya tıklayın!</p>
+    </div>
+    
+    <canvas id="canvas1"></canvas>
+
+    <script>
+        const canvas = document.getElementById('canvas1');
+        const ctx = canvas.getContext('2d');
+
+        // Canvas boyutunu ekran boyutuna eşitle
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+
+        // Su damlası (Parçacık) Listesi
+        const particlesArray = [];
+        let hue = 0; // Renk değişimi için
+
+        // Pencere boyutu değişirse canvası güncelle
+        window.addEventListener('resize', function(){
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        });
+
+        // Fare koordinatlarını tutan nesne
+        const mouse = {
+            x: undefined,
+            y: undefined,
+        }
+
+        canvas.addEventListener('mousemove', function(event){
+            mouse.x = event.x;
+            mouse.y = event.y;
+            // Fare hareket ettikçe 2 damla ekle
+            for(let i = 0; i < 2; i++){
+                particlesArray.push(new Particle());
+            }
+        });
+
+        // --- FİZİK MANTIĞI BURADA ---
+        class Particle {
+            constructor(){
+                this.x = mouse.x; // Farenin olduğu yerden başla
+                this.y = mouse.y;
+                // Rastgele boyut (3 ile 8 arası)
+                this.size = Math.random() * 5 + 3; 
+                // Hız (Rastgele sağa/sola ve yukarı/aşağı saçılma)
+                this.speedX = Math.random() * 3 - 1.5; 
+                this.speedY = Math.random() * 3 - 1.5; 
+                // Renk (Mavi tonları)
+                this.color = 'hsl(200, 100%, 50%)'; 
+            }
+            
+            update(){
+                this.x += this.speedX;
+                this.y += this.speedY;
+                
+                // YERÇEKİMİ ETKİSİ (Aşağı doğru hızlan)
+                this.speedY += 0.2; 
+
+                // Boyutu zamanla küçült (Buharlaşma efekti)
+                if (this.size > 0.2) this.size -= 0.1;
+            }
+            
+            draw(){
+                ctx.fillStyle = this.color;
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+                ctx.fill();
+            }
+        }
+
+        // Animasyon Döngüsü
+        function handleParticles(){
+            for (let i = 0; i < particlesArray.length; i++){
+                particlesArray[i].update();
+                particlesArray[i].draw();
+
+                // Çok küçülen parçacıkları sil (Hafızayı temizle)
+                if (particlesArray[i].size <= 0.3){
+                    particlesArray.splice(i, 1);
+                    i--;
+                }
+            }
+        }
+
+        function animate(){
+            // Ekranda hafif bir iz bırakmak için tam temizleme yerine yarı saydam boyama yapıyoruz
+            // Bu satırı 'ctx.clearRect(0, 0, canvas.width, canvas.height);' yaparsan iz kalmaz.
+            ctx.fillStyle = 'rgba(26, 26, 26, 0.1)'; 
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            handleParticles();
+            requestAnimationFrame(animate);
+        }
+
+        animate();
+
+    </script>
+</body>
+</html>
