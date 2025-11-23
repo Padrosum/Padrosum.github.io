@@ -3,12 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Canlı Texas Hold'em Poker (Coded by Gemini)</title>
+    <title>Casino Texas Hold'em - Gemini Tarafından Kodlandı</title>
     <style>
-        /* --- CSS TASARIMI (Aynı Tasarım) --- */
+        /* --- CSS TASARIMI --- */
         :root {
             --felt-color: #27ae60;
             --wood-color: #5d4037;
+            --gold-color: #f1c40f;
         }
 
         body {
@@ -16,7 +17,6 @@
             background-color: #2c3e50;
             background-image: radial-gradient(circle, #34495e 10%, transparent 10%), radial-gradient(circle, #34495e 10%, transparent 10%);
             background-size: 20px 20px;
-            background-position: 0 0, 10px 10px;
             color: white;
             display: flex;
             flex-direction: column;
@@ -24,11 +24,33 @@
             min-height: 100vh;
             margin: 0;
             padding: 10px;
-            box-sizing: border-box;
-            user-select: none; /* Metin seçimini engelle */
+            user-select: none;
         }
 
-        h1 { margin: 10px 0; text-shadow: 2px 2px 4px #000; font-size: 1.8rem;}
+        /* SKOR TABLOSU (YENİ) */
+        #stats-board {
+            display: flex;
+            gap: 20px;
+            background: rgba(0, 0, 0, 0.6);
+            padding: 10px 30px;
+            border-radius: 15px;
+            border: 2px solid var(--gold-color);
+            margin-bottom: 10px;
+            box-shadow: 0 0 15px rgba(241, 196, 15, 0.3);
+            font-size: 1.2rem;
+            font-weight: bold;
+        }
+
+        .stat-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .money-text { color: #2ecc71; text-shadow: 0 0 5px #2ecc71; }
+        .pot-text { color: var(--gold-color); text-shadow: 0 0 5px var(--gold-color); }
+
+        h1 { margin: 5px 0; text-shadow: 2px 2px 4px #000; font-size: 1.8rem;}
 
         #poker-table {
             background-color: var(--felt-color);
@@ -60,8 +82,10 @@
             padding: 5px 20px;
             margin: 0 auto;
             border: 2px solid rgba(255,255,255,0.1);
+            min-width: 300px;
         }
 
+        /* KART STİLLERİ */
         .card-container {
             width: 60px;
             height: 90px;
@@ -72,42 +96,32 @@
             transform: translateY(-200px) rotate(720deg);
         }
 
-        @keyframes dealCard {
-            to { opacity: 1; transform: translateY(0) rotate(0deg); }
-        }
+        @keyframes dealCard { to { opacity: 1; transform: translateY(0) rotate(0deg); } }
 
         .card {
-            width: 100%;
-            height: 100%;
-            background-color: #ecf0f1;
-            border-radius: 6px;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            font-weight: bold;
-            font-size: 18px;
+            width: 100%; height: 100%;
+            background-color: #ecf0f1; border-radius: 6px;
+            display: flex; flex-direction: column;
+            justify-content: center; align-items: center;
+            font-weight: bold; font-size: 18px;
             box-shadow: 2px 2px 5px rgba(0,0,0,0.3);
-            position: absolute;
-            top: 0; left: 0;
-            backface-visibility: hidden;
-            transition: transform 0.6s;
+            position: absolute; top: 0; left: 0;
+            backface-visibility: hidden; transition: transform 0.6s;
         }
 
         .card-face { z-index: 2; transform: rotateY(0deg); }
         .card.red { color: #c0392b; }
         .card.black { color: #2c3e50; }
-
         .card-back {
             z-index: 1;
             background: repeating-linear-gradient(45deg, #c0392b, #c0392b 5px, #e74c3c 5px, #e74c3c 10px);
-            border: 3px solid white;
-            transform: rotateY(180deg);
+            border: 3px solid white; transform: rotateY(180deg);
         }
 
         .reveal-card .card-back { transform: rotateY(0deg); z-index: 0; }
         .reveal-card .card-face { transform: rotateY(-180deg); z-index: 3; }
-        
+
+        /* KONTROLLER */
         #controls {
             margin-top: 15px;
             display: flex;
@@ -117,54 +131,59 @@
         }
 
         button {
-            padding: 12px 24px;
-            font-size: 16px;
-            cursor: pointer;
-            background: linear-gradient(to bottom, #f39c12, #d35400);
-            border: 2px solid #b84c00;
-            border-radius: 8px;
-            color: white;
-            font-weight: bold;
-            transition: all 0.2s;
-            text-shadow: 1px 1px 2px rgba(0,0,0,0.3);
-            box-shadow: 0 4px #9e4100;
+            padding: 12px 24px; font-size: 16px; cursor: pointer;
+            border-radius: 8px; color: white; font-weight: bold;
+            transition: all 0.2s; border: none;
+            box-shadow: 0 4px rgba(0,0,0,0.3);
         }
         
-        button:active { box-shadow: 0 1px #9e4100; transform: translateY(3px); }
+        button:active { transform: translateY(3px); box-shadow: 0 1px rgba(0,0,0,0.3); }
         button:hover:not(:disabled) { filter: brightness(1.1); }
-        button:disabled { background: #7f8c8d; border-color: #586667; color: #bdc3c7; box-shadow: none; cursor: not-allowed; transform: none;}
+        button:disabled { background: #7f8c8d !important; cursor: not-allowed; transform: none; box-shadow: none; opacity: 0.7;}
+
+        .btn-deal { background: linear-gradient(to bottom, #2ecc71, #27ae60); }
+        .btn-check { background: linear-gradient(to bottom, #3498db, #2980b9); }
+        .btn-raise { background: linear-gradient(to bottom, #f1c40f, #f39c12); color: #4e342e; }
+        .btn-fold { background: linear-gradient(to bottom, #e74c3c, #c0392b); }
 
         #status-msg {
-            font-size: 1.1em;
-            margin-bottom: 15px;
-            background: rgba(0,0,0,0.7);
-            padding: 8px 20px;
-            border-radius: 20px;
-            min-width: 250px;
-            text-align: center;
+            font-size: 1.1em; margin-bottom: 10px;
+            background: rgba(0,0,0,0.7); padding: 8px 20px;
+            border-radius: 20px; min-width: 250px; text-align: center;
             border: 1px solid rgba(255,255,255,0.2);
         }
 
         .label {
-            position: absolute;
-            color: rgba(255,255,255,0.6);
-            font-size: 11px;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            background: rgba(0,0,0,0.3);
-            padding: 2px 5px;
-            border-radius: 4px;
+            position: absolute; color: rgba(255,255,255,0.6);
+            font-size: 11px; text-transform: uppercase;
+            letter-spacing: 1px; background: rgba(0,0,0,0.3);
+            padding: 2px 5px; border-radius: 4px;
         }
         #cpu-label { top: 10px; left: 50%; transform: translateX(-50%); }
         #player-label { bottom: 10px; left: 50%; transform: translateX(-50%); }
+
+        /* Çip animasyonu için (opsiyonel basit efekt) */
+        .chip-change { animation: flash 0.5s; }
+        @keyframes flash { 0% { color: white; } 50% { color: #f1c40f; transform: scale(1.2); } 100% { color: inherit; } }
 
     </style>
 </head>
 <body>
 
-    <h1>Canlı Texas Hold'em</h1>
+    <h1>Casino Texas Hold'em</h1>
+
+    <div id="stats-board">
+        <div class="stat-item">
+            <span>💰 Bakiye:</span>
+            <span id="player-chips" class="money-text">$1000</span>
+        </div>
+        <div class="stat-item" style="border-left: 1px solid rgba(255,255,255,0.3); padding-left: 20px;">
+            <span>🏆 Pot:</span>
+            <span id="current-pot" class="pot-text">$0</span>
+        </div>
+    </div>
     
-    <div id="status-msg">Oyuna başlamak için 'Dağıt' butonuna bas.</div>
+    <div id="status-msg">Bahisler açıldı! Başlamak için 'Dağıt' butonuna bas.</div>
 
     <div id="poker-table">
         <div id="cpu-label" class="label">Bilgisayar</div>
@@ -175,16 +194,14 @@
     </div>
 
     <div id="controls">
-        <button id="btn-deal" onclick="startGame()">Dağıt</button>
-        <button id="btn-next" onclick="nextStep()" disabled>Check (Devam)</button>
-        <button id="btn-fold" onclick="fold()" disabled>Pas (Fold)</button>
+        <button id="btn-deal" class="btn-deal" onclick="startGame()">Dağıt ($50)</button>
+        <button id="btn-check" class="btn-check" onclick="nextStep(false)" disabled>Gör (Check)</button>
+        <button id="btn-raise" class="btn-raise" onclick="nextStep(true)" disabled>Artır (+$100)</button>
+        <button id="btn-fold" class="btn-fold" onclick="fold()" disabled>Pas (Fold)</button>
     </div>
 
     <script>
         /* --- SES MOTORU (WEB AUDIO API) --- */
-        // Dosya kullanmak yerine sesi matematiksel olarak üretiyoruz.
-        // Bu, tarayıcı engellerini aşar ve %100 çalışır.
-        
         let audioCtx = null;
 
         function initAudio() {
@@ -192,80 +209,59 @@
                 const AudioContext = window.AudioContext || window.webkitAudioContext;
                 audioCtx = new AudioContext();
             }
-            if (audioCtx.state === 'suspended') {
-                audioCtx.resume();
-            }
+            if (audioCtx.state === 'suspended') audioCtx.resume();
         }
 
-        // Basit bip/ton sesi üreten fonksiyon
         function playTone(freq, type, duration, delay = 0) {
             if (!audioCtx) return;
-            
             const osc = audioCtx.createOscillator();
             const gainNode = audioCtx.createGain();
-
-            osc.type = type; // 'sine', 'square', 'triangle'
+            osc.type = type;
             osc.frequency.setValueAtTime(freq, audioCtx.currentTime + delay);
-            
             gainNode.gain.setValueAtTime(0.1, audioCtx.currentTime + delay);
             gainNode.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + delay + duration);
-
             osc.connect(gainNode);
             gainNode.connect(audioCtx.destination);
-
             osc.start(audioCtx.currentTime + delay);
             osc.stop(audioCtx.currentTime + delay + duration);
         }
 
-        // Hışırtı sesi (Kart sesi için)
         function playNoise(duration) {
             if (!audioCtx) return;
             const bufferSize = audioCtx.sampleRate * duration;
             const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
             const data = buffer.getChannelData(0);
-
-            for (let i = 0; i < bufferSize; i++) {
-                data[i] = Math.random() * 2 - 1;
-            }
-
+            for (let i = 0; i < bufferSize; i++) data[i] = Math.random() * 2 - 1;
             const noise = audioCtx.createBufferSource();
             noise.buffer = buffer;
             const gainNode = audioCtx.createGain();
-            
-            // Filtre ekleyerek sesi yumuşatalım (kağıt sesi gibi)
             const filter = audioCtx.createBiquadFilter();
             filter.type = 'lowpass';
             filter.frequency.value = 1000;
-
             gainNode.gain.setValueAtTime(0.15, audioCtx.currentTime);
             gainNode.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + duration);
-
             noise.connect(filter);
             filter.connect(gainNode);
             gainNode.connect(audioCtx.destination);
             noise.start();
         }
 
-        // Olay Bazlı Sesler
         const sounds = {
             click: () => playTone(800, 'sine', 0.1),
-            deal: () => playNoise(0.15), // Kağıt hışırtısı
+            deal: () => playNoise(0.15),
+            chip: () => playTone(1200, 'triangle', 0.05), // Çip sesi
             win: () => {
-                // Majör akor
-                playTone(523.25, 'triangle', 0.3, 0);   // C5
-                playTone(659.25, 'triangle', 0.3, 0.1); // E5
-                playTone(783.99, 'triangle', 0.6, 0.2); // G5
+                playTone(523.25, 'triangle', 0.3, 0);
+                playTone(659.25, 'triangle', 0.3, 0.1);
+                playTone(783.99, 'triangle', 0.6, 0.2);
             },
             lose: () => {
-                // Hüzünlü sesler
-                playTone(400, 'sawtooth', 0.4, 0);
-                playTone(300, 'sawtooth', 0.6, 0.3);
+                playTone(200, 'sawtooth', 0.5, 0);
+                playTone(150, 'sawtooth', 0.8, 0.3);
             }
         };
 
-
-        /* --- OYUN MANTIĞI --- */
-
+        /* --- OYUN DEĞİŞKENLERİ --- */
         const suits = ['♠', '♥', '♦', '♣'];
         const values = ['2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K', 'A'];
         
@@ -275,6 +271,27 @@
         let communityCards = [];
         let stage = 0;
         let cpuCardElements = []; 
+
+        // BAHİS SİSTEMİ DEĞİŞKENLERİ
+        let playerChips = 1000;
+        let pot = 0;
+        const ANTE_AMOUNT = 50;
+        const RAISE_AMOUNT = 100;
+
+        function updateUI() {
+            const chipsEl = document.getElementById('player-chips');
+            const potEl = document.getElementById('current-pot');
+            
+            chipsEl.innerText = '$' + playerChips;
+            potEl.innerText = '$' + pot;
+
+            // Animasyon sınıfını tetikle
+            chipsEl.classList.remove('chip-change');
+            potEl.classList.remove('chip-change');
+            void chipsEl.offsetWidth; // Reflow tetikle
+            chipsEl.classList.add('chip-change');
+            potEl.classList.add('chip-change');
+        }
 
         function createDeck() {
             deck = [];
@@ -321,17 +338,28 @@
             for (const card of cards) {
                 const cardEl = createCardHTML(card, isCpu);
                 targetElement.appendChild(cardEl);
-                sounds.deal(); // Ses burada çağrılıyor
+                sounds.deal();
                 await new Promise(r => setTimeout(r, 200));
             }
         }
 
         async function startGame() {
-            initAudio(); // Tarayıcı ses motorunu başlat
-            sounds.click();
+            initAudio();
             
-            updateStatus("Kartlar karıştırılıyor ve dağıtılıyor...");
+            if (playerChips < ANTE_AMOUNT) {
+                updateStatus("Bakiye yetersiz! Oyun Bitti. (Sayfayı yenile)");
+                return;
+            }
+
+            // BAHİS KESİNTİSİ (ANTE)
+            playerChips -= ANTE_AMOUNT;
+            pot = ANTE_AMOUNT * 2; // Oyuncu + CPU
+            updateUI();
+            sounds.chip();
+
+            updateStatus("Ante ($50) ödendi. Kartlar dağıtılıyor...");
             document.getElementById('btn-deal').disabled = true;
+            toggleGameButtons(false);
             
             createDeck();
             shuffleDeck();
@@ -346,23 +374,39 @@
             await dealCardsWithAnimation(playerHand, document.getElementById('player-hand'), false);
             await dealCardsWithAnimation(cpuHand, document.getElementById('cpu-hand'), true);
 
-            updateStatus("Sıra sende. Devam etmek için 'Check' yap.");
-            
-            document.getElementById('btn-next').disabled = false;
-            document.getElementById('btn-fold').disabled = false;
-            document.getElementById('btn-next').innerText = "Gör / Devam Et";
+            updateStatus("Sıra sende: Gör veya Artır?");
+            toggleGameButtons(true);
+            document.getElementById('btn-deal').innerText = "Oyun Sürüyor...";
         }
 
-        async function nextStep() {
+        // nextStep Artık bir 'isRaise' parametresi alıyor
+        async function nextStep(isRaise) {
             initAudio();
-            sounds.click();
-            document.getElementById('btn-next').disabled = true;
+            toggleGameButtons(false);
+
+            // BAHİS MANTIĞI
+            if (isRaise) {
+                if (playerChips >= RAISE_AMOUNT) {
+                    playerChips -= RAISE_AMOUNT;
+                    pot += RAISE_AMOUNT * 2; // Sen artırdın, CPU gördü
+                    updateUI();
+                    sounds.chip();
+                    updateStatus("Artırdın! CPU gördü (+$200 Pota).");
+                } else {
+                    updateStatus("Yetersiz bakiye! Mecburen Check yapıldı.");
+                }
+            } else {
+                sounds.click();
+            }
+            
+            // Küçük bir bekleme
+            await new Promise(r => setTimeout(r, 500));
 
             let newCards = [];
             if (stage === 1) { // Flop
                 newCards = [deck.pop(), deck.pop(), deck.pop()];
                 stage = 2;
-                updateStatus("Flop açılıyor...");
+                updateStatus(isRaise ? "Bahisler alındı. Flop açılıyor..." : "Flop açılıyor...");
             } else if (stage === 2) { // Turn
                 newCards = [deck.pop()];
                 stage = 3;
@@ -370,8 +414,9 @@
             } else if (stage === 3) { // River
                 newCards = [deck.pop()];
                 stage = 4;
-                document.getElementById('btn-next').innerText = "Elleri Aç (Showdown)";
-                updateStatus("River (son kart) açılıyor!");
+                document.getElementById('btn-check').innerText = "Elleri Aç";
+                document.getElementById('btn-raise').disabled = true; // Sonda artırma kapalı olsun basitleştirmek için
+                updateStatus("Son kart (River) açılıyor!");
             } else if (stage === 4) { // Showdown
                 determineWinner();
                 stage = 5;
@@ -388,17 +433,23 @@
             }
 
             if(stage < 5) {
-                 document.getElementById('btn-next').disabled = false;
-                 updateStatus("Sıra sende.");
+                 toggleGameButtons(true);
+                 if(stage === 4) {
+                     // Son aşamada sadece Elleri Aç butonu aktif kalsın, artırmayı kapatalım (isteğe bağlı)
+                     document.getElementById('btn-raise').disabled = true;
+                     document.getElementById('btn-check').innerText = "Elleri Aç";
+                 } else {
+                     updateStatus("Sıra sende: Gör veya Artır?");
+                 }
             }
         }
 
         function fold() {
             initAudio();
             sounds.lose();
-            updateStatus("Pas geçtiniz. Bilgisayar kazandı.");
+            updateStatus("Pas geçtiniz. Potu Bilgisayar kazandı.");
             revealCpuCards();
-            endGame();
+            endGame(false); // Kaybetme durumu
         }
 
         function revealCpuCards() {
@@ -442,35 +493,61 @@
             const playerScore = calculateHandStrength(playerHand, communityCards);
             const cpuScore = calculateHandStrength(cpuHand, communityCards);
 
-            let msg = "";
             if (playerScore > cpuScore) {
-                msg = "Tebrikler! Sen Kazandın! 🎉";
-                document.getElementById('status-msg').style.backgroundColor = "#27ae60";
-                setTimeout(() => sounds.win(), 500); // Biraz gecikmeli zafer sesi
+                endGame(true); // KAZANDIN
             } else if (cpuScore > playerScore) {
-                msg = "Bilgisayar Kazandı. 😔";
+                endGame(false); // KAYBETTİN
+            } else {
+                endGame(null); // BERABERE
+            }
+        }
+
+        function endGame(playerWon) {
+            let msg = "";
+            
+            if (playerWon === true) {
+                msg = `KAZANDIN! Pot ($${pot}) senin oldu! 🎉`;
+                document.getElementById('status-msg').style.backgroundColor = "#27ae60";
+                playerChips += pot;
+                setTimeout(() => sounds.win(), 500);
+            } else if (playerWon === false) {
+                msg = "KAYBETTİN. Pot Bilgisayara gitti. 😔";
                 document.getElementById('status-msg').style.backgroundColor = "#c0392b";
                 setTimeout(() => sounds.lose(), 500);
             } else {
-                msg = "Berabere! 🤝";
+                msg = "BERABERE! Pot bölüşüldü. 🤝";
+                playerChips += (pot / 2);
                 sounds.click();
             }
+            
+            pot = 0;
+            updateUI();
             updateStatus(msg);
-            endGame();
-        }
 
-        function endGame() {
             document.getElementById('btn-deal').disabled = false;
-            document.getElementById('btn-next').disabled = true;
-            document.getElementById('btn-fold').disabled = true;
-            document.getElementById('btn-next').innerText = "Check";
+            document.getElementById('btn-deal').innerText = "Yeni El Dağıt ($50)";
+            toggleGameButtons(false);
+            document.getElementById('btn-check').innerText = "Gör (Check)";
+            
+            // Eğer para bittiyse
+            if (playerChips < ANTE_AMOUNT) {
+                setTimeout(() => alert("Bakiye Bitti! Sayfayı yenileyerek tekrar başlayabilirsin."), 1000);
+                document.getElementById('btn-deal').disabled = true;
+                document.getElementById('btn-deal').innerText = "GAME OVER";
+            }
         }
 
         function updateStatus(msg) {
             document.getElementById('status-msg').innerText = msg;
-            if(!msg.includes("Kazandın") && !msg.includes("Bilgisayar")) {
+            if(!msg.includes("KAZANDIN") && !msg.includes("KAYBETTİN")) {
                 document.getElementById('status-msg').style.backgroundColor = "rgba(0,0,0,0.7)";
             }
+        }
+
+        function toggleGameButtons(active) {
+            document.getElementById('btn-check').disabled = !active;
+            document.getElementById('btn-raise').disabled = !active;
+            document.getElementById('btn-fold').disabled = !active;
         }
 
     </script>
