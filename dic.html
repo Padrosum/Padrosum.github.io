@@ -3,9 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Texas Hold'em Poker - Coded by Gemine</title>
+    <title>Canlı Texas Hold'em Poker (Coded by Gemini)</title>
     <style>
-        /* --- CSS TASARIMI --- */
+        /* --- CSS TASARIMI (Aynı Tasarım) --- */
         :root {
             --felt-color: #27ae60;
             --wood-color: #5d4037;
@@ -13,7 +13,7 @@
 
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background-color: #2c3e50; /* Arka plan */
+            background-color: #2c3e50;
             background-image: radial-gradient(circle, #34495e 10%, transparent 10%), radial-gradient(circle, #34495e 10%, transparent 10%);
             background-size: 20px 20px;
             background-position: 0 0, 10px 10px;
@@ -25,13 +25,13 @@
             margin: 0;
             padding: 10px;
             box-sizing: border-box;
+            user-select: none; /* Metin seçimini engelle */
         }
 
         h1 { margin: 10px 0; text-shadow: 2px 2px 4px #000; font-size: 1.8rem;}
 
         #poker-table {
-            background-color: var(--felt-color); /* Yeşil Masa Rengi */
-            /* Masaya hafif bir keçe dokusu verelim */
+            background-color: var(--felt-color);
             background-image: url("data:image/svg+xml,%3Csvg width='40' height='40' viewBox='0 0 40 40' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M20 20.5V18H0v2.5h20zM20 22v-2.5H0V22h20zM40 20.5V18H20v2.5h20zM40 22v-2.5H20V22h20zM20 0v2.5H0V0h20zM20 1.5V4H0V1.5h20zM40 0v2.5H20V0h20zM40 1.5V4H20V1.5h20zM20 40v-2.5H0V40h20zM20 38.5V36H0v2.5h20zM40 40v-2.5H20V40h20zM40 38.5V36H20v2.5h20z' fill='%231e8449' fill-opacity='0.15' fill-rule='evenodd'/%3E%3C/svg%3E");
             border: 12px solid var(--wood-color);
             border-radius: 80px;
@@ -44,7 +44,7 @@
             flex-direction: column;
             justify-content: space-around;
             padding: 15px;
-            perspective: 1000px; /* 3D efekti için */
+            perspective: 1000px;
         }
 
         .hand-area, .community-area {
@@ -62,23 +62,18 @@
             border: 2px solid rgba(255,255,255,0.1);
         }
 
-        /* --- KART TASARIMI VE ANİMASYONLARI --- */
         .card-container {
             width: 60px;
             height: 90px;
             margin: 0 4px;
             position: relative;
-            /* Kartın masaya geliş animasyonu */
-            animation: dealCard 0.6s cubic-bezier(0.23, 1, 0.32, 1) forwards;
-            opacity: 0; /* Başlangıçta görünmez */
-            transform: translateY(-200px) rotate(720deg); /* Yukarıdan ve dönerek gelsin */
+            animation: dealCard 0.5s cubic-bezier(0.23, 1, 0.32, 1) forwards;
+            opacity: 0;
+            transform: translateY(-200px) rotate(720deg);
         }
 
         @keyframes dealCard {
-            to {
-                opacity: 1;
-                transform: translateY(0) rotate(0deg);
-            }
+            to { opacity: 1; transform: translateY(0) rotate(0deg); }
         }
 
         .card {
@@ -94,17 +89,12 @@
             font-size: 18px;
             box-shadow: 2px 2px 5px rgba(0,0,0,0.3);
             position: absolute;
-            top: 0;
-            left: 0;
-            backface-visibility: hidden; /* Arka yüzü gizle */
-            transition: transform 0.6s, opacity 0.1s;
+            top: 0; left: 0;
+            backface-visibility: hidden;
+            transition: transform 0.6s;
         }
 
-        .card-face {
-            z-index: 2;
-            transform: rotateY(0deg);
-        }
-
+        .card-face { z-index: 2; transform: rotateY(0deg); }
         .card.red { color: #c0392b; }
         .card.black { color: #2c3e50; }
 
@@ -112,21 +102,12 @@
             z-index: 1;
             background: repeating-linear-gradient(45deg, #c0392b, #c0392b 5px, #e74c3c 5px, #e74c3c 10px);
             border: 3px solid white;
-            /* CPU kartı kapalıyken ön yüzü gizlemek için döndür */
             transform: rotateY(180deg);
         }
 
-        /* CPU kartı açılma efekti için sınıf */
-        .reveal-card .card-back {
-            transform: rotateY(0deg); /* Arka yüzü öne döndür (aslında gizle) */
-            z-index: 0;
-        }
-        .reveal-card .card-face {
-             transform: rotateY(-180deg); /* Ön yüzü arkaya döndür (göster) */
-             z-index: 3;
-        }
+        .reveal-card .card-back { transform: rotateY(0deg); z-index: 0; }
+        .reveal-card .card-face { transform: rotateY(-180deg); z-index: 3; }
         
-        /* --- ARAYÜZ ELEMANLARI --- */
         #controls {
             margin-top: 15px;
             display: flex;
@@ -149,11 +130,7 @@
             box-shadow: 0 4px #9e4100;
         }
         
-        button:active {
-             box-shadow: 0 1px #9e4100;
-             transform: translateY(3px);
-        }
-
+        button:active { box-shadow: 0 1px #9e4100; transform: translateY(3px); }
         button:hover:not(:disabled) { filter: brightness(1.1); }
         button:disabled { background: #7f8c8d; border-color: #586667; color: #bdc3c7; box-shadow: none; cursor: not-allowed; transform: none;}
 
@@ -191,13 +168,9 @@
 
     <div id="poker-table">
         <div id="cpu-label" class="label">Bilgisayar</div>
-        
         <div id="cpu-hand" class="hand-area"></div>
-
         <div id="community-cards" class="community-area"></div>
-
         <div id="player-hand" class="hand-area"></div>
-
         <div id="player-label" class="label">Senin Elin</div>
     </div>
 
@@ -208,32 +181,90 @@
     </div>
 
     <script>
-        /* --- SES EFEKTLERİ (BASE64) --- */
-        // Not: Dosya boyutunu küçük tutmak için çok kısa, sentezlenmiş sesler kullanılmıştır.
-
-        // Kart dağıtma sesi (kısa bir hışırtı/klik)
-        const sfxDeal = new Audio('data:audio/wav;base64,UklGRlYAAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQ4AAACAgICAgICAgICAgIB/f39/f39/f39/f39/f39/f39/f39/f39/f39/f39/f4CAgICAgICAgICAgICAgICAgH9/f39/f39/f39/f39/f3+AgICAgICAgICAgICAgICAgH9/f39/f39/f39/f39/f3+AgICAgICAgICAgICAgIA=');
+        /* --- SES MOTORU (WEB AUDIO API) --- */
+        // Dosya kullanmak yerine sesi matematiksel olarak üretiyoruz.
+        // Bu, tarayıcı engellerini aşar ve %100 çalışır.
         
-        // Çip sesi / Buton tıklama (kısa bir "tık")
-        const sfxClick = new Audio('data:audio/wav;base64,UklGRkoAAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQAAAAAA//8AAP//AAD//wAA//8AAP//AAD//wAA//8AAP//AAD//wAA//8AAP//AAD//wAA//8AAP//AAD//wAA');
+        let audioCtx = null;
 
-        // Kazanma sesi (kısa pozitif bir tını)
-        const sfxWin = new Audio('data:audio/wav;base64,UklGRjQAAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YYAAAAAAgD+AQIB/f39/f3+AgIB/f39/f3+AgIB/f39/f3+AgIA=');
-
-        // Kaybetme/Fold sesi (kısa negatif bir tını)
-        const sfxLose = new Audio('data:audio/wav;base64,UklGRjAAAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YXYAAACAgIB/gH+Af39/f39/f4CAgH9/f39/f3+AgIB/f39/f39/gIA=');
-
-        // Sesleri asenkron çalmak için yardımcı fonksiyon (hızlı tekrar için)
-        function playSound(sound) {
-            // Tarayıcıların otomatik ses çalma engeline takılmamak için kullanıcı etkileşimi beklenir.
-            // Bu basit klonlama yöntemi, aynı sesin üst üste binmesini sağlar.
-            let soundClone = sound.cloneNode(); 
-            soundClone.volume = 0.5; // Sesi biraz kısalım
-            soundClone.play().catch(() => {/* Kullanıcı henüz etkileşime girmediyse hata yoksay */});
+        function initAudio() {
+            if (!audioCtx) {
+                const AudioContext = window.AudioContext || window.webkitAudioContext;
+                audioCtx = new AudioContext();
+            }
+            if (audioCtx.state === 'suspended') {
+                audioCtx.resume();
+            }
         }
 
+        // Basit bip/ton sesi üreten fonksiyon
+        function playTone(freq, type, duration, delay = 0) {
+            if (!audioCtx) return;
+            
+            const osc = audioCtx.createOscillator();
+            const gainNode = audioCtx.createGain();
 
-        /* --- JAVASCRIPT OYUN MANTIĞI --- */
+            osc.type = type; // 'sine', 'square', 'triangle'
+            osc.frequency.setValueAtTime(freq, audioCtx.currentTime + delay);
+            
+            gainNode.gain.setValueAtTime(0.1, audioCtx.currentTime + delay);
+            gainNode.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + delay + duration);
+
+            osc.connect(gainNode);
+            gainNode.connect(audioCtx.destination);
+
+            osc.start(audioCtx.currentTime + delay);
+            osc.stop(audioCtx.currentTime + delay + duration);
+        }
+
+        // Hışırtı sesi (Kart sesi için)
+        function playNoise(duration) {
+            if (!audioCtx) return;
+            const bufferSize = audioCtx.sampleRate * duration;
+            const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+            const data = buffer.getChannelData(0);
+
+            for (let i = 0; i < bufferSize; i++) {
+                data[i] = Math.random() * 2 - 1;
+            }
+
+            const noise = audioCtx.createBufferSource();
+            noise.buffer = buffer;
+            const gainNode = audioCtx.createGain();
+            
+            // Filtre ekleyerek sesi yumuşatalım (kağıt sesi gibi)
+            const filter = audioCtx.createBiquadFilter();
+            filter.type = 'lowpass';
+            filter.frequency.value = 1000;
+
+            gainNode.gain.setValueAtTime(0.15, audioCtx.currentTime);
+            gainNode.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + duration);
+
+            noise.connect(filter);
+            filter.connect(gainNode);
+            gainNode.connect(audioCtx.destination);
+            noise.start();
+        }
+
+        // Olay Bazlı Sesler
+        const sounds = {
+            click: () => playTone(800, 'sine', 0.1),
+            deal: () => playNoise(0.15), // Kağıt hışırtısı
+            win: () => {
+                // Majör akor
+                playTone(523.25, 'triangle', 0.3, 0);   // C5
+                playTone(659.25, 'triangle', 0.3, 0.1); // E5
+                playTone(783.99, 'triangle', 0.6, 0.2); // G5
+            },
+            lose: () => {
+                // Hüzünlü sesler
+                playTone(400, 'sawtooth', 0.4, 0);
+                playTone(300, 'sawtooth', 0.6, 0.3);
+            }
+        };
+
+
+        /* --- OYUN MANTIĞI --- */
 
         const suits = ['♠', '♥', '♦', '♣'];
         const values = ['2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K', 'A'];
@@ -243,7 +274,7 @@
         let cpuHand = [];
         let communityCards = [];
         let stage = 0;
-        let cpuCardElements = []; // CPU kartlarını daha sonra açmak için referans tutacağız
+        let cpuCardElements = []; 
 
         function createDeck() {
             deck = [];
@@ -261,51 +292,44 @@
             }
         }
 
-        // Gelişmiş 3D Kart HTML Yapısı Oluşturma
         function createCardHTML(card, isCpu = false) {
             const container = document.createElement('div');
             container.className = 'card-container';
-            // Animasyonun sırayla tetiklenmesi için rastgele küçük bir gecikme ekleyelim
-            container.style.animationDelay = `${Math.random() * 0.3}s`;
+            container.style.animationDelay = `${Math.random() * 0.2}s`;
 
-            // Ön yüz (Kartın kendisi)
             const cardFace = document.createElement('div');
             cardFace.className = 'card card-face';
             if (card.suit === '♥' || card.suit === '♦') cardFace.classList.add('red');
             else cardFace.classList.add('black');
             cardFace.innerHTML = `<div>${card.value}</div><div>${card.suit}</div>`;
 
-            // Arka yüz (Desen)
             const cardBack = document.createElement('div');
             cardBack.className = 'card card-back';
 
-            // Yapıyı birleştir
             container.appendChild(cardBack);
             container.appendChild(cardFace);
             
-            // Eğer CPU kartıysa, başlangıçta arka yüzü göster (bunu CSS'deki transform ile yapıyoruz)
             if (isCpu) {
-                container.classList.add('reveal-card'); // Başlangıçta ters dursun
+                container.classList.add('reveal-card');
                 cpuCardElements.push(container);
             }
-
             return container;
         }
 
-        // Kartları sırayla animasyonlu dağıtmak için yardımcı fonksiyon
         async function dealCardsWithAnimation(cards, targetElement, isCpu = false) {
             targetElement.innerHTML = '';
             for (const card of cards) {
                 const cardEl = createCardHTML(card, isCpu);
                 targetElement.appendChild(cardEl);
-                playSound(sfxDeal); // Her kartta ses çal
-                // Bir sonraki kartı dağıtmadan önce kısa bir süre bekle (animasyon için)
+                sounds.deal(); // Ses burada çağrılıyor
                 await new Promise(r => setTimeout(r, 200));
             }
         }
 
         async function startGame() {
-            playSound(sfxClick);
+            initAudio(); // Tarayıcı ses motorunu başlat
+            sounds.click();
+            
             updateStatus("Kartlar karıştırılıyor ve dağıtılıyor...");
             document.getElementById('btn-deal').disabled = true;
             
@@ -314,12 +338,11 @@
             playerHand = [deck.pop(), deck.pop()];
             cpuHand = [deck.pop(), deck.pop()];
             communityCards = [];
-            cpuCardElements = []; // Referansları temizle
+            cpuCardElements = [];
             stage = 1;
 
-            document.getElementById('community-cards').innerHTML = ''; // Ortayı temizle
+            document.getElementById('community-cards').innerHTML = '';
 
-            // Sırayla dağıt: Önce oyuncu, sonra CPU
             await dealCardsWithAnimation(playerHand, document.getElementById('player-hand'), false);
             await dealCardsWithAnimation(cpuHand, document.getElementById('cpu-hand'), true);
 
@@ -331,8 +354,9 @@
         }
 
         async function nextStep() {
-            playSound(sfxClick);
-            document.getElementById('btn-next').disabled = true; // İşlem bitene kadar butonu kilitle
+            initAudio();
+            sounds.click();
+            document.getElementById('btn-next').disabled = true;
 
             let newCards = [];
             if (stage === 1) { // Flop
@@ -355,12 +379,11 @@
             }
 
             communityCards.push(...newCards);
-            // Yeni kartları animasyonla ekle
             const communityDiv = document.getElementById('community-cards');
             for (const card of newCards) {
                 const cardEl = createCardHTML(card);
                 communityDiv.appendChild(cardEl);
-                playSound(sfxDeal);
+                sounds.deal();
                 await new Promise(r => setTimeout(r, 250));
             }
 
@@ -371,20 +394,19 @@
         }
 
         function fold() {
-            playSound(sfxLose);
+            initAudio();
+            sounds.lose();
             updateStatus("Pas geçtiniz. Bilgisayar kazandı.");
             revealCpuCards();
             endGame();
         }
 
         function revealCpuCards() {
-             // CPU kartlarındaki 'reveal-card' sınıfını kaldırarak dönmelerini sağla
             cpuCardElements.forEach(container => {
                 container.classList.remove('reveal-card');
             });
         }
 
-        // Basit El Değerlendirmesi (Önceki ile aynı)
         function calculateHandStrength(hand, community) {
             const allCards = hand.concat(community);
             allCards.sort((a, b) => b.weight - a.weight);
@@ -411,10 +433,9 @@
         async function determineWinner() {
             updateStatus("Eller açılıyor...");
             
-            // CPU kartlarını dramatik bir şekilde tek tek açalım
             for(let i = 0; i < cpuCardElements.length; i++) {
                  cpuCardElements[i].classList.remove('reveal-card');
-                 playSound(sfxDeal); // Açılma sesi
+                 sounds.deal();
                  await new Promise(r => setTimeout(r, 300));
             }
 
@@ -425,14 +446,14 @@
             if (playerScore > cpuScore) {
                 msg = "Tebrikler! Sen Kazandın! 🎉";
                 document.getElementById('status-msg').style.backgroundColor = "#27ae60";
-                playSound(sfxWin);
+                setTimeout(() => sounds.win(), 500); // Biraz gecikmeli zafer sesi
             } else if (cpuScore > playerScore) {
                 msg = "Bilgisayar Kazandı. 😔";
                 document.getElementById('status-msg').style.backgroundColor = "#c0392b";
-                playSound(sfxLose);
+                setTimeout(() => sounds.lose(), 500);
             } else {
                 msg = "Berabere! 🤝";
-                 playSound(sfxClick);
+                sounds.click();
             }
             updateStatus(msg);
             endGame();
