@@ -3,13 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Türk Pokeri - JS Edition</title>
+    <title>Türk Pokeri - JS Edition (Responsive)</title>
     <style>
-        /* --- TASARIM VE ANİMASYONLAR --- */
+        /* --- TEMEL TASARIM --- */
         :root {
-            --bg-color: #1a232f; /* Daha koyu arka plan */
+            --bg-color: #1a232f;
             --table-color: #277714; 
-            --wood-border: #6d4c41; /* Kahverengi ahşap */
+            --wood-border: #6d4c41;
             --card-width: 80px;
             --card-height: 112px;
         }
@@ -25,7 +25,6 @@
             height: 100vh;
             color: white;
             overflow: hidden;
-            /* Hafif bir vinyet (vignette) efekti */
             background-image: radial-gradient(circle at center, rgba(0,0,0,0) 0%, rgba(0,0,0,0.8) 100%);
         }
 
@@ -34,15 +33,13 @@
             width: 90%;
             max-width: 800px;
             height: 500px;
-            /* Keçe Efekti: Hafif gürültü ve dairesel parlaklık */
             background-color: var(--table-color);
             background-image: radial-gradient(circle at 50% 50%, rgba(255, 255, 255, 0.1) 0%, transparent 80%),
                               linear-gradient(rgba(0,0,0,0.1) 1px, transparent 1px);
             background-size: 4px 4px;
             
-            border: 15px solid var(--wood-border); /* Daha kalın ahşap kenar */
+            border: 15px solid var(--wood-border);
             border-radius: 100px;
-            /* Gelişmiş gölgelendirme */
             box-shadow: inset 0 0 50px rgba(0,0,0,0.8), 0 20px 50px rgba(0,0,0,0.7), 0 0 0 5px rgba(255,255,255,0.05);
             display: flex;
             flex-direction: column;
@@ -50,20 +47,19 @@
             padding: 40px;
         }
 
-        /* Alanlar */
+        /* --- KART VE EL ALANLARI --- */
         .hand-area {
             height: 140px;
             display: flex;
             justify-content: center;
             align-items: center;
             position: relative;
-            /* Kartların 3D görünümü için perspective eklenmeli */
             perspective: 800px; 
         }
         
         .player-label {
             position: absolute;
-            left: -100px; /* Masanın dışına taşı */
+            left: -100px; 
             top: 50%;
             transform: translateY(-50%);
             background: var(--wood-border);
@@ -73,14 +69,17 @@
             box-shadow: 0 4px 10px rgba(0,0,0,0.5);
         }
 
-        /* Kart Stili */
         .card {
             width: var(--card-width);
             height: var(--card-height);
             background-color: white;
-            border-radius: 6px; /* Daha yumuşak köşe */
-            box-shadow: 0 1px 3px rgba(0,0,0,0.5), 0 0 0 1px rgba(0,0,0,0.1); /* Hafif gölge ve kağıt kenarı */
-            margin: 0 5px;
+            border-radius: 6px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.5), 0 0 0 1px rgba(0,0,0,0.1);
+            margin: 0 4px; /* Kartlar arası boşluğu biraz azalt */
+            transition: transform 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94), margin-top 0.3s, box-shadow 0.3s;
+            transform-origin: bottom center;
+            transform: rotateX(5deg) rotateZ(0deg) translateY(0); 
+            user-select: none;
             display: flex;
             flex-direction: column;
             justify-content: space-between;
@@ -89,52 +88,38 @@
             font-weight: bold;
             font-size: 16px;
             cursor: pointer;
-            
-            /* 3D ve Hover için geçiş */
-            transition: transform 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94), margin-top 0.3s, box-shadow 0.3s;
-            user-select: none;
             position: relative;
-            
-            /* Hafif 3D eğiklik */
-            transform-origin: bottom center;
-            transform: rotateX(5deg) rotateZ(0deg) translateY(0); 
         }
 
         .card:hover {
-            /* Sadece SWAP aşamasında hover efekti */
             transform: translateY(-5px) rotateX(5deg) scale(1.02);
         }
         
         .card.selected {
             margin-top: -30px; 
-            box-shadow: 0 0 20px gold, 0 0 0 3px gold; /* Altın parlaklık */
+            box-shadow: 0 0 20px gold, 0 0 0 3px gold;
             transform: translateY(-30px) rotateX(5deg) scale(1.05);
         }
-
-        .card.red { color: #e74c3c; }
-        .card.black { color: #2c3e50; }
-
+        
         .card-center {
             position: absolute;
             top: 50%;
             left: 50%;
             transform: translate(-50%, -50%);
-            font-size: 48px; /* Daha büyük sembol */
-            opacity: 0.2; /* Hafif transparan */
+            font-size: 48px;
+            opacity: 0.2;
         }
 
-        /* Kart Arkası */
         .card-back {
-            /* Daha belirgin bir arkalık deseni */
             background: linear-gradient(45deg, #1c3150 25%, #2a4c7e 25%, #2a4c7e 50%, #1c3150 50%, #1c3150 75%, #2a4c7e 75%);
             background-size: 20px 20px;
-            border: 3px solid #ffcc00; /* Altın sarısı kenar */
+            border: 3px solid #ffcc00;
             box-shadow: 0 3px 5px rgba(0,0,0,0.5);
-            transform: rotateX(5deg) rotateZ(0deg); /* Açık kartlarla aynı 3D görünüm */
+            transform: rotateX(5deg) rotateZ(0deg); 
         }
         .card-back * { display: none; }
 
-        /* Kontrol Paneli */
+        /* --- KONTROL ALANI --- */
         #controls {
             position: absolute;
             top: 50%;
@@ -142,65 +127,143 @@
             transform: translate(-50%, -50%);
             text-align: center;
             z-index: 10;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
         }
         
-        #swap-controls button {
-            width: 150px; 
+        #swap-controls {
+            display: flex;
+            gap: 10px;
         }
 
         button {
-            padding: 12px 18px;
-            font-size: 16px;
-            background: #e67e22; /* Daha tok bir turuncu */
-            border: none;
+            padding: 10px 15px; /* Buton padding'i mobil için biraz küçültüldü */
+            font-size: 15px;
+            background: #e67e22; 
             border-radius: 5px;
-            cursor: pointer;
-            color: white; /* Yazı rengi beyaz */
+            color: white; 
             font-weight: bold;
             box-shadow: 0 4px 0 #d35400;
             transition: all 0.1s, background 0.2s;
-            margin: 5px;
-        }
-
-        button:hover {
-            background: #d35400;
-        }
-
-        button:active {
-            transform: translateY(4px);
-            box-shadow: none;
-        }
-        button:disabled {
-            background: #7f8c8d;
-            box-shadow: none;
-            cursor: not-allowed;
+            margin: 5px 0;
         }
 
         #status-text {
-            font-size: 24px;
-            margin-bottom: 10px;
+            font-size: 22px; /* Mobil için yazı boyutu biraz küçültüldü */
+            margin-bottom: 8px;
             background: rgba(0,0,0,0.7);
-            padding: 8px 20px;
+            padding: 8px 15px;
             border-radius: 10px;
-            /* Mesaj animasyonu için hazırlık */
             transition: color 0.3s;
             animation: messageFadeIn 0.5s ease-out;
         }
-        
-        /* Yeni: Mesaj animasyonu */
+
+        /* --- ANİMASYONLAR --- */
         @keyframes messageFadeIn {
             from { opacity: 0; transform: translateY(-10px); }
             to { opacity: 1; transform: translateY(0); }
         }
-
-        /* Animasyon Sınıfları */
-        .deal-anim {
-            animation: dealIn 0.5s ease-out forwards;
-        }
-
         @keyframes dealIn {
             from { opacity: 0; transform: translateY(-100px) scale(0.5) rotateX(90deg); }
             to { opacity: 1; transform: translateY(0) scale(1) rotateX(5deg); }
+        }
+
+        /* **************************************** */
+        /* --- MOBİL UYUMLULUK (MEDIA QUERY) --- */
+        /* **************************************** */
+        @media (max-width: 768px) {
+            
+            :root {
+                --card-width: 55px; /* Kartları daralt */
+                --card-height: 80px; /* Kartları daralt */
+            }
+
+            body {
+                /* Dikey alanda daha rahat sığması için dikey hizalamayı serbest bırak */
+                height: auto; 
+                min-height: 100vh;
+                padding: 10px 0;
+            }
+
+            #game-table {
+                width: 95%; /* Genişliği artır */
+                height: 400px; /* Masayı biraz küçült */
+                border-radius: 60px;
+                padding: 10px; /* İç paddingi azalt */
+            }
+
+            .hand-area {
+                height: 100px; /* El alanını daralt */
+            }
+
+            .card {
+                font-size: 14px;
+                margin: 0 3px; /* Kartlar arası boşluğu daha da azalt */
+            }
+            
+            .card.selected {
+                margin-top: -20px; /* Seçilme farkını küçült */
+                transform: translateY(-20px) rotateX(5deg) scale(1.05);
+            }
+
+            .card-center {
+                font-size: 36px; /* Sembolü küçült */
+            }
+            
+            /* Oyuncu Etiketi (Label) Konumlandırması */
+            .player-label {
+                position: static; /* Etiketi akışa geri al */
+                transform: none; 
+                margin-bottom: 5px;
+                padding: 5px 10px;
+                font-size: 12px;
+                background: rgba(0, 0, 0, 0.4);
+            }
+
+            #player-hand, #cpu-hand {
+                /* Etiketi kartların üzerine taşıyabilmek için flex-direction'ı değiştir */
+                flex-direction: column;
+            }
+            
+            #player-hand {
+                align-items: flex-start; /* Oyuncu etiketini sola hizala */
+            }
+
+            #cpu-hand {
+                align-items: flex-end; /* CPU etiketini sağa hizala */
+                flex-direction: row-reverse; /* Kartları düzgün hizala */
+            }
+            
+            #player-hand .player-label, #cpu-hand .player-label {
+                /* Etiketleri kartlardan ayrı bir alana taşıma (örnek: masanın köşesi) */
+                position: absolute;
+                top: -30px;
+                left: 10px;
+            }
+            #cpu-hand .player-label {
+                left: auto;
+                right: 10px;
+            }
+            
+            /* Kontrol Alanı */
+            #controls {
+                transform: translate(-50%, -50%);
+            }
+
+            #swap-controls {
+                flex-direction: column; /* Butonları alt alta diz */
+                width: 100%;
+            }
+
+            #swap-controls button {
+                width: 150px; /* Mobil dikey düğme genişliği */
+                margin: 5px auto;
+            }
+            
+            #status-text {
+                font-size: 18px; /* Durum metnini daha da küçült */
+            }
         }
     </style>
 </head>
@@ -227,6 +290,8 @@
     </div>
 
     <script>
+        /* JS KODU (Önceki Sürümle Aynı) */
+
         /* --- SES EFEKTLERİ (Web Audio API) --- */
         const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
 
@@ -265,7 +330,6 @@
         let cpuHand = [];
         let gameState = 'IDLE'; 
 
-        // DOM Elementleri
         const elPlayerHand = document.getElementById('player-hand');
         const elCpuHand = document.getElementById('cpu-hand');
         const elStatus = document.getElementById('status-text');
@@ -274,7 +338,6 @@
         const btnShowdown = document.getElementById('btn-showdown'); 
         const elSwapControls = document.getElementById('swap-controls'); 
 
-        // Desteyi Oluştur
         function createDeck() {
             deck = [];
             for(let s of SUITS) {
@@ -284,7 +347,6 @@
             }
         }
 
-        // Desteyi Karıştır
         function shuffleDeck() {
             for (let i = deck.length - 1; i > 0; i--) {
                 const j = Math.floor(Math.random() * (i + 1));
@@ -292,7 +354,6 @@
             }
         }
 
-        // Oyunu Başlat (Dağıtma)
         function startGame() {
             soundClick();
             createDeck();
@@ -312,7 +373,7 @@
             elStatus.style.color = "white"; 
             
             btnStart.style.display = 'none';
-            elSwapControls.style.display = 'block';
+            elSwapControls.style.display = 'flex'; // Kontrol elemanlarının görünürlüğünü flex olarak ayarla
             btnSwap.disabled = false;
             btnShowdown.disabled = false;
             
@@ -321,7 +382,6 @@
             for(let i=0; i<5; i++) setTimeout(soundDeal, i*100);
         }
 
-        // Oyuncu Kart Değiştirme Hamlesi
         function playerSwap() {
             soundClick();
             
@@ -357,7 +417,6 @@
             renderHands(false);
         }
 
-        // CPU Kart Değiştirme Mantığı
         function cpuSwapLogic() {
             if(deck.length >= 2 && !hasPair(cpuHand)) {
                 cpuHand.sort((a, b) => a.value - b.value); 
@@ -368,8 +427,6 @@
             }
         }
 
-
-        // Sonuçları Gösterme (Bıttır/Pas)
         function finalShowdown() {
             soundClick();
             
@@ -383,9 +440,7 @@
             determineWinner();
         }
 
-        // Kazananı Belirle
         function determineWinner() {
-            // Durum mesajı animasyonunu tetikle
             elStatus.style.animation = 'none';
             void elStatus.offsetWidth; 
             elStatus.style.animation = 'messageFadeIn 0.5s ease-out';
@@ -406,7 +461,6 @@
                 soundLose();
                 elStatus.style.color = "#e74c3c";
             } else {
-                // Eşitlik durumu (Kicker kontrolü)
                 if (pScore.highCard > cScore.highCard) {
                     msg = `KAZANDIN! Yüksek Kart: ${RANKS[pScore.highCard - 6]}. Sen: ${p_name}, CPU: ${c_name}`;
                     soundWin();
@@ -423,29 +477,24 @@
             elStatus.innerText = msg;
         }
 
-        // El Değerlendirme Algoritması (Türk Pokeri Kuralları ve İngilizce İsimler)
         function evaluateHand(hand) {
             let values = hand.map(c => c.value).sort((a,b) => a-b);
             let suits = hand.map(c => c.suit);
-            
             const isFlush = suits.every(s => s === suits[0]);
-            
             let isStraight = true;
             for(let i=0; i<4; i++) {
                 if(values[i+1] !== values[i] + 1) isStraight = false;
             }
             let isHighStraight = values.length === 5 && values[0]===10 && values[4]===14 && values[1]===11;
             if(!isStraight && isHighStraight) isStraight = true;
-            
             const counts = {};
             values.forEach(x => { counts[x] = (counts[x] || 0) + 1; });
             const countsValues = Object.values(counts);
-
             let highCard = values[4];
 
             if(isFlush && isStraight) return { score: 900, name: "Straight Flush", highCard: highCard };
             if(countsValues.includes(4)) return { score: 800, name: "Four of a Kind", highCard: getHighByCount(counts, 4) };
-            if(isFlush) return { score: 700, name: "Flush", highCard: highCard }; // Renk > Ful
+            if(isFlush) return { score: 700, name: "Flush", highCard: highCard }; 
             if(countsValues.includes(3) && countsValues.includes(2)) return { score: 600, name: "Full House", highCard: getHighByCount(counts, 3) };
             if(isStraight) return { score: 500, name: "Straight", highCard: highCard };
             if(countsValues.includes(3)) return { score: 400, name: "Three of a Kind", highCard: getHighByCount(counts, 3) };
@@ -457,7 +506,6 @@
             return { score: 100, name: "High Card", highCard: highCard };
         }
 
-        // Yardımcı: Belirli sayıda tekrar eden en büyük kartı bul
         function getHighByCount(counts, n) {
             let max = 0;
             for(let [k, v] of Object.entries(counts)) {
@@ -477,13 +525,11 @@
             hand.sort((a, b) => a.value - b.value);
         }
 
-        // Ekrana Çizme
         function renderHands(showCpu) {
             elPlayerHand.innerHTML = '<div class="player-label">SEN</div>';
             playerHand.forEach((card, index) => {
                 const div = createCardDiv(card);
                 div.onclick = () => {
-                    // Kart tıklama sadece SWAP aşamasında aktif
                     if(gameState === 'SWAP') {
                         card.selected = !card.selected;
                         soundClick();
@@ -496,7 +542,6 @@
             elCpuHand.innerHTML = '<div class="player-label">CPU</div>';
             cpuHand.forEach((card, index) => {
                 if(showCpu) {
-                    // Kartları açarken hafif bir gecikme ekleyelim
                     const div = createCardDiv(card);
                     div.style.animationDelay = (index * 0.1) + 's';
                     elCpuHand.appendChild(div);
@@ -515,7 +560,6 @@
             div.className = `card ${colorClass}`;
             if(card.selected) div.classList.add('selected');
             
-            // Dağıtma animasyonu sadece başlangıçta ve kartlar yeni dağıtıldığında eklenmeli
             if (gameState === 'SWAP' || gameState === 'IDLE' || gameState === 'SHOWDOWN') {
                 div.classList.add('deal-anim');
             }
@@ -528,7 +572,6 @@
             return div;
         }
 
-        // İlk görünümü ayarla
         window.onload = () => {
             if (btnStart) btnStart.style.display = 'block';
             if (elSwapControls) elSwapControls.style.display = 'none';
