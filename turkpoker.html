@@ -274,10 +274,9 @@
             sortHand(playerHand); 
 
             gameState = 'SWAP';
-            elStatus.innerText = "Değiştirmek istediğin kartları seç (Max 5)";
-            elStatus.style.color = "white"; // Rengi sıfırla
+            elStatus.innerText = "Değiştirmek istediğin kartları seç (En fazla 4)";
+            elStatus.style.color = "white"; 
             
-            // Kontrol görünürlüğünü ayarla
             btnStart.style.display = 'none';
             elSwapControls.style.display = 'block';
             btnSwap.disabled = false;
@@ -291,15 +290,21 @@
         // Oyuncu Kart Değiştirme Hamlesi
         function playerSwap() {
             soundClick();
-            btnSwap.disabled = true; // Tekrar değişimi engelle
             
             // Seçili kart sayısı
             const countSelected = playerHand.filter(c => c.selected).length;
-            if (countSelected > deck.length) {
-                elStatus.innerText = "Yetersiz deste! Tüm kartları değiştiremezsin.";
-                btnSwap.disabled = false;
+            
+            // *** TÜRK POKERİ KURAL KONTROLÜ (Maksimum 4 kart değiştirme) ***
+            if (countSelected > 4) {
+                elStatus.innerText = "Türk Pokerinde en fazla 4 kart değiştirebilirsin!";
                 return;
             }
+            if (countSelected > deck.length) {
+                elStatus.innerText = "Yetersiz deste! Tüm kartları değiştiremezsin.";
+                return;
+            }
+
+            btnSwap.disabled = true; 
             
             // 1. Oyuncu seçili kartları atar, yenisini alır
             const newHand = playerHand.filter(c => !c.selected);
@@ -311,13 +316,12 @@
             playerHand = newHand;
             sortHand(playerHand);
 
-            // Seçim durumlarını sıfırla
             playerHand.forEach(c => c.selected = false);
 
             // 2. CPU'nun kart değiştirme mantığı
             cpuSwapLogic();
 
-            gameState = 'WAIT_SHOWDOWN'; // Sonuç bekleme aşaması
+            gameState = 'WAIT_SHOWDOWN'; 
             elStatus.innerText = `${countSelected} kart değiştirdin. Görmek için 'Bıttır/Pas' de.`;
             
             renderHands(false);
@@ -325,6 +329,7 @@
 
         // CPU Kart Değiştirme Mantığı
         function cpuSwapLogic() {
+            // Basit AI: Per (Çift) veya daha iyisi yoksa rastgele 2 kart değiştirir (maksimum 2).
             if(deck.length >= 2 && !hasPair(cpuHand)) {
                 cpuHand.sort((a, b) => a.value - b.value); 
                 cpuHand.splice(0, 2); 
@@ -341,7 +346,6 @@
             
             gameState = 'SHOWDOWN';
             
-            // Butonları tekrar başlangıç durumuna getir
             elSwapControls.style.display = 'none';
             btnStart.innerText = "Tekrar Oyna";
             btnStart.style.display = 'block';
@@ -368,7 +372,7 @@
                 soundLose();
                 elStatus.style.color = "#e74c3c";
             } else {
-                // Eşitlik durumunda yüksek karta bakılmalı (Basitçe High Card değerlerine bakalım)
+                // Eşitlik durumu
                 if (pScore.highCard > cScore.highCard) {
                     msg = `KAZANDIN! Eşit Ellerde Yüksek Kartın Kazandı. Sen: ${p_name}, CPU: ${c_name}`;
                     soundWin();
@@ -405,35 +409,35 @@
 
             let highCard = values[4];
 
-            // Floş Royal / Sıralı Floş: 900
-            if(isFlush && isStraight) return { score: 900, name: "Sıralı Floş", highCard: highCard };
+            // Puanlama ve İngilizce İsimler
+            // Sıralı Floş: 900
+            if(isFlush && isStraight) return { score: 900, name: "Straight Flush", highCard: highCard };
             
             // Kare: 800
-            if(countsValues.includes(4)) return { score: 800, name: "Kare", highCard: getHighByCount(counts, 4) };
+            if(countsValues.includes(4)) return { score: 800, name: "Four of a Kind", highCard: getHighByCount(counts, 4) };
             
-            // Renk (Flush): 700 (Fulden büyük!)
-            if(isFlush) return { score: 700, name: "Renk", highCard: highCard };
+            // Renk (Fulden Büyük): 700
+            if(isFlush) return { score: 700, name: "Flush", highCard: highCard };
             
             // Ful: 600
-            if(countsValues.includes(3) && countsValues.includes(2)) return { score: 600, name: "Ful", highCard: getHighByCount(counts, 3) };
+            if(countsValues.includes(3) && countsValues.includes(2)) return { score: 600, name: "Full House", highCard: getHighByCount(counts, 3) };
             
-            // Kent (Straight): 500
-            if(isStraight) return { score: 500, name: "Kent", highCard: highCard };
+            // Kent: 500
+            if(isStraight) return { score: 500, name: "Straight", highCard: highCard };
             
             // Üçlü: 400
-            if(countsValues.includes(3)) return { score: 400, name: "Üçlü", highCard: getHighByCount(counts, 3) };
+            if(countsValues.includes(3)) return { score: 400, name: "Three of a Kind", highCard: getHighByCount(counts, 3) };
             
             // Döper: 300
             if(countsValues.filter(x => x===2).length === 2) {
-                // Döperde yüksek olan çiftin değerini alalım
-                return { score: 300, name: "Döper", highCard: getHighByCount(counts, 2) };
+                return { score: 300, name: "Two Pair", highCard: getHighByCount(counts, 2) };
             }
             
             // Per: 200
-            if(countsValues.includes(2)) return { score: 200, name: "Per", highCard: getHighByCount(counts, 2) };
+            if(countsValues.includes(2)) return { score: 200, name: "Pair", highCard: getHighByCount(counts, 2) };
             
             // Yüksek Kart: 100
-            return { score: 100, name: "Yüksek Kart", highCard: highCard };
+            return { score: 100, name: "High Card", highCard: highCard };
         }
 
         // Yardımcı: Belirli sayıda tekrar eden en büyük kartı bul
@@ -461,7 +465,6 @@
             elPlayerHand.innerHTML = '<div class="player-label">SEN</div>';
             playerHand.forEach((card, index) => {
                 const div = createCardDiv(card);
-                // Tıklama olayı (Sadece ilk SWAP aşamasında)
                 div.onclick = () => {
                     if(gameState === 'SWAP') {
                         card.selected = !card.selected;
@@ -491,7 +494,6 @@
             div.className = `card ${colorClass}`;
             if(card.selected) div.classList.add('selected');
             
-            // Dağıtma animasyonu sadece ilk dağıtımda olmalı
             if (gameState === 'SWAP' || gameState === 'IDLE') {
                 div.classList.add('deal-anim');
             }
