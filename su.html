@@ -121,10 +121,14 @@
             text-align: center;
             z-index: 10;
         }
+        
+        #swap-controls button {
+            width: 150px; /* Butonları hizalamak için genişlik verelim */
+        }
 
         button {
-            padding: 12px 24px;
-            font-size: 18px;
+            padding: 12px 18px;
+            font-size: 16px;
             background: #f1c40f;
             border: none;
             border-radius: 5px;
@@ -171,21 +175,25 @@
     <div id="game-table">
         <div class="hand-area" id="cpu-hand">
             <div class="player-label">CPU</div>
-            </div>
+        </div>
 
         <div id="controls">
             <div id="status-text">Oyuna Başla</div>
-            <button id="btn-action" onclick="startGame()">Dağıt</button>
+            <button id="btn-start" onclick="startGame()">Dağıt</button>
+            
+            <div id="swap-controls" style="display: none;">
+                <button id="btn-swap" onclick="playerSwap()">Değiştir</button>
+                <button id="btn-showdown" onclick="finalShowdown()">Bıttır/Pas</button>
+            </div>
         </div>
 
         <div class="hand-area" id="player-hand">
             <div class="player-label">SEN</div>
-            </div>
+        </div>
     </div>
 
     <script>
         /* --- SES EFEKTLERİ (Web Audio API) --- */
-        // Harici dosya yüklememek için sesleri kodla üretiyoruz.
         const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
 
         function playTone(freq, type, duration) {
@@ -202,8 +210,8 @@
             osc.stop(audioCtx.currentTime + duration);
         }
 
-        function soundDeal() { playTone(600, 'sine', 0.1); } // Kart sesi (tık)
-        function soundClick() { playTone(400, 'triangle', 0.05); } // Tıklama
+        function soundDeal() { playTone(600, 'sine', 0.1); }
+        function soundClick() { playTone(400, 'triangle', 0.05); }
         function soundWin() { 
             playTone(400, 'sine', 0.1); 
             setTimeout(() => playTone(600, 'sine', 0.2), 100);
@@ -215,21 +223,22 @@
         }
 
         /* --- OYUN MANTIĞI --- */
-        // Türk Pokeri Destesi: Genelde A, K, Q, J, 10, 9, 8, 7 (32 Kart) veya 6 (36 Kart).
-        // Biz 36 kartlık desteyi kullanacağız.
-        const SUITS = ['♥', '♠', '♦', '♣']; // Kupa, Maça, Karo, Sinek
+        const SUITS = ['♥', '♠', '♦', '♣']; 
         const RANKS = ['6', '7', '8', '9', '10', 'J', 'Q', 'K', 'A'];
-        
+
         let deck = [];
         let playerHand = [];
         let cpuHand = [];
-        let gameState = 'IDLE'; // IDLE, DEAL, SWAP, SHOWDOWN
+        let gameState = 'IDLE'; 
 
         // DOM Elementleri
         const elPlayerHand = document.getElementById('player-hand');
         const elCpuHand = document.getElementById('cpu-hand');
-        const btnAction = document.getElementById('btn-action');
         const elStatus = document.getElementById('status-text');
+        const btnStart = document.getElementById('btn-start'); 
+        const btnSwap = document.getElementById('btn-swap'); 
+        const btnShowdown = document.getElementById('btn-showdown'); 
+        const elSwapControls = document.getElementById('swap-controls'); 
 
         // Desteyi Oluştur
         function createDeck() {
@@ -249,7 +258,7 @@
             }
         }
 
-        // Oyunu Başlat
+        // Oyunu Başlat (Dağıtma)
         function startGame() {
             soundClick();
             createDeck();
@@ -257,29 +266,40 @@
             playerHand = [];
             cpuHand = [];
             
-            // 5'er kart dağıt
             for(let i=0; i<5; i++) {
                 playerHand.push(deck.pop());
                 cpuHand.push(deck.pop());
             }
 
-            // Kartları sıraya diz (Büyükten küçüğe - Görsel düzen için)
             sortHand(playerHand); 
 
             gameState = 'SWAP';
-            elStatus.innerText = "Değiştirmek istediğin kartları seç";
-            btnAction.innerText = "Kartları Değiştir (veya Pas)";
-            btnAction.onclick = swapPhase;
+            elStatus.innerText = "Değiştirmek istediğin kartları seç (Max 5)";
+            elStatus.style.color = "white"; // Rengi sıfırla
             
-            renderHands(false); // Kartları çiz, CPU kapalı
+            // Kontrol görünürlüğünü ayarla
+            btnStart.style.display = 'none';
+            elSwapControls.style.display = 'block';
+            btnSwap.disabled = false;
+            btnShowdown.disabled = false;
             
-            // Dağıtma efekti sesi (biraz gecikmeli seri ses)
+            renderHands(false);
+            
             for(let i=0; i<5; i++) setTimeout(soundDeal, i*100);
         }
 
-        // Kart Değiştirme Aşaması
-        function swapPhase() {
+        // Oyuncu Kart Değiştirme Hamlesi
+        function playerSwap() {
             soundClick();
+            btnSwap.disabled = true; // Tekrar değişimi engelle
+            
+            // Seçili kart sayısı
+            const countSelected = playerHand.filter(c => c.selected).length;
+            if (countSelected > deck.length) {
+                elStatus.innerText = "Yetersiz deste! Tüm kartları değiştiremezsin.";
+                btnSwap.disabled = false;
+                return;
+            }
             
             // 1. Oyuncu seçili kartları atar, yenisini alır
             const newHand = playerHand.filter(c => !c.selected);
@@ -291,20 +311,40 @@
             playerHand = newHand;
             sortHand(playerHand);
 
-            // 2. CPU Mantığı (Basit Yapay Zeka)
-            // Eğer elinde Per (Çift) yoksa rastgele 2 kart değiştirir.
-            // Varsa değiştirmez (Risk almaz).
-            if(!hasPair(cpuHand)) {
-                cpuHand.pop();
-                cpuHand.pop();
-                cpuHand.push(deck.pop());
-                cpuHand.push(deck.pop());
-            }
+            // Seçim durumlarını sıfırla
+            playerHand.forEach(c => c.selected = false);
 
+            // 2. CPU'nun kart değiştirme mantığı
+            cpuSwapLogic();
+
+            gameState = 'WAIT_SHOWDOWN'; // Sonuç bekleme aşaması
+            elStatus.innerText = `${countSelected} kart değiştirdin. Görmek için 'Bıttır/Pas' de.`;
+            
+            renderHands(false);
+        }
+
+        // CPU Kart Değiştirme Mantığı
+        function cpuSwapLogic() {
+            if(deck.length >= 2 && !hasPair(cpuHand)) {
+                cpuHand.sort((a, b) => a.value - b.value); 
+                cpuHand.splice(0, 2); 
+                cpuHand.push(deck.pop());
+                cpuHand.push(deck.pop());
+                sortHand(cpuHand);
+            }
+        }
+
+
+        // Sonuçları Gösterme (Bıttır/Pas)
+        function finalShowdown() {
+            soundClick();
+            
             gameState = 'SHOWDOWN';
-            elStatus.innerText = "Sonuçlar Karşılaştırılıyor...";
-            btnAction.innerText = "Tekrar Oyna";
-            btnAction.onclick = startGame;
+            
+            // Butonları tekrar başlangıç durumuna getir
+            elSwapControls.style.display = 'none';
+            btnStart.innerText = "Tekrar Oyna";
+            btnStart.style.display = 'block';
 
             renderHands(true); // CPU kartlarını AÇ
             determineWinner();
@@ -316,72 +356,84 @@
             const cScore = evaluateHand(cpuHand);
             
             let msg = "";
+            let p_name = pScore.name;
+            let c_name = cScore.name;
+
             if(pScore.score > cScore.score) {
-                msg = "KAZANDIN! (" + pScore.name + ")";
+                msg = `KAZANDIN! Sen: ${p_name}, CPU: ${c_name}`;
                 soundWin();
                 elStatus.style.color = "#2ecc71";
             } else if (cScore.score > pScore.score) {
-                msg = "KAYBETTİN... (" + cScore.name + ")";
+                msg = `KAYBETTİN... Sen: ${p_name}, CPU: ${c_name}`;
                 soundLose();
                 elStatus.style.color = "#e74c3c";
             } else {
-                // Eşitlik durumu (Basitlik için yüksek karta bakıyoruz)
-                msg = "BERABERE!";
-                elStatus.style.color = "white";
+                // Eşitlik durumunda yüksek karta bakılmalı (Basitçe High Card değerlerine bakalım)
+                if (pScore.highCard > cScore.highCard) {
+                    msg = `KAZANDIN! Eşit Ellerde Yüksek Kartın Kazandı. Sen: ${p_name}, CPU: ${c_name}`;
+                    soundWin();
+                    elStatus.style.color = "#2ecc71";
+                } else if (cScore.highCard > pScore.highCard) {
+                    msg = `KAYBETTİN! Eşit Ellerde CPU'nun Yüksek Kartı Kazandı. Sen: ${p_name}, CPU: ${c_name}`;
+                    soundLose();
+                    elStatus.style.color = "#e74c3c";
+                } else {
+                    msg = `BERABERE! Sen: ${p_name}, CPU: ${c_name}`;
+                    elStatus.style.color = "white";
+                }
             }
             elStatus.innerText = msg;
         }
 
         // El Değerlendirme Algoritması (Türk Pokeri Kuralları)
-        // Sıralama: Floş(Royal) > Kare > Renk > Ful > Kent > Üçlü > Döper > Per > Yüksek
-        // Dikkat: Türk Pokerinde "Renk" (Flush), "Ful"den (Full House) üstündür!
         function evaluateHand(hand) {
-            // Önce value'ları alıp sıralayalım
             let values = hand.map(c => c.value).sort((a,b) => a-b);
             let suits = hand.map(c => c.suit);
             
             const isFlush = suits.every(s => s === suits[0]);
             
-            // Kent (Straight) kontrolü
             let isStraight = true;
             for(let i=0; i<4; i++) {
                 if(values[i+1] !== values[i] + 1) isStraight = false;
             }
-            // A, K, Q, J, 10 özel durumu (En büyük kent)
-            if(!isStraight && values[0]===10 && values[4]===14) isStraight = true; // 10-A
+            let isHighStraight = values.length === 5 && values[0]===10 && values[4]===14 && values[1]===11;
+            if(!isStraight && isHighStraight) isStraight = true;
             
-            // Tekrarlayan kart sayıları (Frekans)
             const counts = {};
             values.forEach(x => { counts[x] = (counts[x] || 0) + 1; });
             const countsValues = Object.values(counts);
 
-            // Puanlama (Base Score + High Card)
+            let highCard = values[4];
+
             // Floş Royal / Sıralı Floş: 900
-            if(isFlush && isStraight) return { score: 900 + values[4], name: "Sıralı Floş" };
+            if(isFlush && isStraight) return { score: 900, name: "Sıralı Floş", highCard: highCard };
             
             // Kare: 800
-            if(countsValues.includes(4)) return { score: 800 + getHighByCount(counts, 4), name: "Kare" };
+            if(countsValues.includes(4)) return { score: 800, name: "Kare", highCard: getHighByCount(counts, 4) };
             
-            // Renk (Flush): 700 (Türk pokerinde Fulden büyük)
-            if(isFlush) return { score: 700 + values[4], name: "Renk" };
+            // Renk (Flush): 700 (Fulden büyük!)
+            if(isFlush) return { score: 700, name: "Renk", highCard: highCard };
             
             // Ful: 600
-            if(countsValues.includes(3) && countsValues.includes(2)) return { score: 600 + getHighByCount(counts, 3), name: "Ful" };
+            if(countsValues.includes(3) && countsValues.includes(2)) return { score: 600, name: "Ful", highCard: getHighByCount(counts, 3) };
             
             // Kent (Straight): 500
-            if(isStraight) return { score: 500 + values[4], name: "Kent" };
+            if(isStraight) return { score: 500, name: "Kent", highCard: highCard };
             
             // Üçlü: 400
-            if(countsValues.includes(3)) return { score: 400 + getHighByCount(counts, 3), name: "Üçlü" };
+            if(countsValues.includes(3)) return { score: 400, name: "Üçlü", highCard: getHighByCount(counts, 3) };
             
             // Döper: 300
-            if(countsValues.filter(x => x===2).length === 2) return { score: 300 + getHighByCount(counts, 2), name: "Döper" };
+            if(countsValues.filter(x => x===2).length === 2) {
+                // Döperde yüksek olan çiftin değerini alalım
+                return { score: 300, name: "Döper", highCard: getHighByCount(counts, 2) };
+            }
             
             // Per: 200
-            if(countsValues.includes(2)) return { score: 200 + getHighByCount(counts, 2), name: "Per" };
+            if(countsValues.includes(2)) return { score: 200, name: "Per", highCard: getHighByCount(counts, 2) };
             
             // Yüksek Kart: 100
-            return { score: 100 + values[4], name: "Yüksek Kart" };
+            return { score: 100, name: "Yüksek Kart", highCard: highCard };
         }
 
         // Yardımcı: Belirli sayıda tekrar eden en büyük kartı bul
@@ -393,12 +445,11 @@
             return max;
         }
 
-        // Basit Yapay Zeka Kontrolü (Per var mı?)
         function hasPair(hand) {
             let values = hand.map(c => c.value);
             const counts = {};
             values.forEach(x => { counts[x] = (counts[x] || 0) + 1; });
-            return Object.values(counts).includes(2) || Object.values(counts).includes(3);
+            return Object.values(counts).some(x => x >= 2);
         }
 
         function sortHand(hand) {
@@ -407,11 +458,10 @@
 
         // Ekrana Çizme
         function renderHands(showCpu) {
-            // Oyuncu Eli
             elPlayerHand.innerHTML = '<div class="player-label">SEN</div>';
             playerHand.forEach((card, index) => {
-                const div = createCardDiv(card, true);
-                // Tıklama olayı (Sadece kart değişimi aşamasında)
+                const div = createCardDiv(card);
+                // Tıklama olayı (Sadece ilk SWAP aşamasında)
                 div.onclick = () => {
                     if(gameState === 'SWAP') {
                         card.selected = !card.selected;
@@ -422,12 +472,10 @@
                 elPlayerHand.appendChild(div);
             });
 
-            // CPU Eli
             elCpuHand.innerHTML = '<div class="player-label">CPU</div>';
             cpuHand.forEach((card, index) => {
-                // showCpu true ise kartı açık göster, yoksa kapalı
                 if(showCpu) {
-                    elCpuHand.appendChild(createCardDiv(card, false));
+                    elCpuHand.appendChild(createCardDiv(card));
                 } else {
                     const back = document.createElement('div');
                     back.className = 'card card-back deal-anim';
@@ -437,12 +485,17 @@
             });
         }
 
-        function createCardDiv(card, isInteractive) {
+        function createCardDiv(card) {
             const div = document.createElement('div');
             const colorClass = (card.suit === '♥' || card.suit === '♦') ? 'red' : 'black';
-            div.className = `card ${colorClass} deal-anim`;
+            div.className = `card ${colorClass}`;
             if(card.selected) div.classList.add('selected');
             
+            // Dağıtma animasyonu sadece ilk dağıtımda olmalı
+            if (gameState === 'SWAP' || gameState === 'IDLE') {
+                div.classList.add('deal-anim');
+            }
+
             div.innerHTML = `
                 <div style="align-self:flex-start">${card.rank}<br>${card.suit}</div>
                 <div class="card-center">${card.suit}</div>
@@ -451,6 +504,11 @@
             return div;
         }
 
+        // İlk görünümü ayarla
+        window.onload = () => {
+            if (btnStart) btnStart.style.display = 'block';
+            if (elSwapControls) elSwapControls.style.display = 'none';
+        };
     </script>
 </body>
 </html>
