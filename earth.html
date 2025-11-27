@@ -2,137 +2,209 @@
 <html lang="tr">
 <head>
     <meta charset="UTF-8">
-    <title>Gelişmiş 3D Saat Sistemi</title>
+    <title>3D Güneş Sistemi Simülasyonu</title>
     <style>
-        body { margin: 0; overflow: hidden; background: #000; }
-        #tooltip {
-            position: absolute; background: rgba(0,0,0,0.9); color: #fff;
-            padding: 10px; border: 1px solid #444; pointer-events: none; display: none;
-            font-family: monospace; z-index: 10;
+        body { margin: 0; overflow: hidden; background-color: #000; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        canvas { display: block; }
+        
+        #info {
+            position: absolute; top: 20px; width: 100%; text-align: center;
+            color: rgba(255, 255, 255, 0.8); pointer-events: none; z-index: 5;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.8);
         }
+
+        #tooltip {
+            position: absolute;
+            background: rgba(15, 23, 42, 0.9);
+            color: #fff;
+            padding: 12px 18px;
+            border-radius: 8px;
+            border-left: 4px solid #3b82f6;
+            pointer-events: none;
+            display: none;
+            backdrop-filter: blur(4px);
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
+            font-size: 14px;
+            z-index: 10;
+            transform: translate(15px, 15px);
+        }
+        
+        .planet-name { font-size: 20px; font-weight: bold; color: #60a5fa; display: block; margin-bottom: 4px; }
+        .planet-info { font-size: 12px; color: #94a3b8; }
     </style>
 </head>
 <body>
 
-<div id="tooltip"></div>
+<div id="info">
+    <h2>3D Güneş Sistemi</h2>
+    <p>Gezegenler üzerinde gezinerek bilgi alabilirsin. Yakınlaşmak ve döndürmek için fareyi kullan.</p>
+</div>
+
+<div id="tooltip">
+    <span class="planet-name" id="tp-planet-name">Gezegen</span>
+    <span class="planet-info" id="tp-planet-info">Bilgi</span>
+</div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
 
 <script>
-    // --- VERİTABANI (RENK -> BİLGİ EŞLEŞTİRMESİ) ---
-    // Picking Texture üzerindeki renklerin hangi ülkeye ait olduğu
-    // Gerçek bir uygulamada bu çok uzun bir JSON listesi olur.
-    const countryData = {
-        16711680: { name: "Türkiye", offset: 3 },   // Kırmızı (R:255, G:0, B:0) -> Decimal: 16711680
-        65280:    { name: "Almanya", offset: 1 },   // Yeşil (R:0, G:255, B:0) -> Decimal: 65280
-        255:      { name: "ABD (New York)", offset: -5 }, // Mavi -> Decimal: 255
-        // ... Diğer tüm ülkelerin renk kodları buraya ...
-    };
-
-    // --- TEMEL KURULUM ---
-    const container = document.body;
-    const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
-    camera.position.z = 2.5;
+    // --- 1. KURULUM ---
+    const scene = new THREE.Scene();
+    
+    // Kamera ayarları
+    const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 10000);
+    camera.position.set(0, 5, 20); // Güneş sistemini kapsayacak bir konum
 
     const renderer = new THREE.WebGLRenderer({ antialias: true });
     renderer.setSize(window.innerWidth, window.innerHeight);
-    container.appendChild(renderer.domElement);
+    renderer.setPixelRatio(window.devicePixelRatio);
+    document.body.appendChild(renderer.domElement);
 
+    // Mouse kontrolleri (OrbitControls) - Güneş Sistemini gezmek için
     const controls = new THREE.OrbitControls(camera, renderer.domElement);
+    controls.enableDamping = true;
+    controls.dampingFactor = 0.05;
+    controls.minDistance = 2;
+    controls.maxDistance = 100; // Geniş bir alan için maksimum mesafeyi artırıyoruz
+    controls.enablePan = true; // Kaydırmayı etkinleştir
 
-    // --- 1. GÖRÜNEN SAHNE (Main Scene) ---
-    const scene = new THREE.Scene();
+    // --- 2. UZAY ARKA PLANI (Yıldızlar) ---
+    const starGeo = new THREE.BufferGeometry();
+    const starCount = 5000;
+    const starPos = new Float32Array(starCount * 3);
+    for(let i=0; i<starCount*3; i++) starPos[i] = (Math.random() - 0.5) * 2000; // Çok daha geniş bir alan
+    starGeo.setAttribute('position', new THREE.BufferAttribute(starPos, 3));
+    const starMat = new THREE.PointsMaterial({color: 0xffffff, size: 2, transparent: true, opacity: 0.8});
+    const stars = new THREE.Points(starGeo, starMat);
+    scene.add(stars);
+
+    // --- 3. GÜNEŞ ---
     const textureLoader = new THREE.TextureLoader();
-
-    const geometry = new THREE.SphereGeometry(1, 64, 64);
-    const material = new THREE.MeshPhongMaterial({
-        map: textureLoader.load('https://unpkg.com/three-globe/example/img/earth-blue-marble.jpg'), // Görsel Kaplama
-    });
-    const earth = new THREE.Mesh(geometry, material);
-    scene.add(earth);
-
-    // Işıklar
-    const light = new THREE.DirectionalLight(0xffffff, 1);
-    light.position.set(5, 3, 5);
-    scene.add(light);
-    scene.add(new THREE.AmbientLight(0x333333));
-
-
-    // --- 2. GİZLİ SAHNE (Picking Scene) ---
-    // Bu sahne ekrana çizilmez, bellekte tutulur.
-    const pickingScene = new THREE.Scene();
-    const pickingTarget = new THREE.WebGLRenderTarget(window.innerWidth, window.innerHeight);
     
-    // Picking Texture'ı (Buraya renkli harita yüklenmeli)
-    // ÖRNEK İÇİN: Görseli kullanıyoruz ama normalde düz renkli harita olmalı.
-    const pickingTexture = textureLoader.load('https://unpkg.com/three-globe/example/img/earth-blue-marble.jpg'); 
-    // NOT: Picking materyalinde ışık/gölge OLMAZ. Sadece düz renk (MeshBasicMaterial) kullanılır.
-    const pickingMaterial = new THREE.MeshBasicMaterial({ map: pickingTexture });
-    const pickingEarth = new THREE.Mesh(geometry, pickingMaterial);
-    pickingScene.add(pickingEarth);
+    const sunGeometry = new THREE.SphereGeometry(2, 64, 64); // Güneş en büyük
+    const sunMaterial = new THREE.MeshBasicMaterial({ // Güneş kendi ışığını yaydığı için BasicMaterial
+        map: textureLoader.load('https://raw.githubusercontent.com/davidkpiano/planets/master/src/assets/textures/sun.jpg')
+    });
+    const sun = new THREE.Mesh(sunGeometry, sunMaterial);
+    scene.add(sun);
 
+    // Güneşten gelen nokta ışığı
+    const pointLight = new THREE.PointLight(0xffffff, 2, 0, 2); // Renk, yoğunluk, uzaklık, azalma
+    scene.add(pointLight);
 
-    // --- 3. RENK OKUMA VE ETKİLEŞİM ---
+    // --- 4. GEZEGENLER VE YÖRÜNGELER ---
+    // Gezegen Verileri (Boyutlar ve uzaklıklar orantılı ama gerçek değil)
+    const planetsData = [
+        { name: "Merkür", size: 0.1, distance: 3, speed: 0.02, texture: 'https://raw.githubusercontent.com/davidkpiano/planets/master/src/assets/textures/mercury.jpg' },
+        { name: "Venüs", size: 0.2, distance: 5, speed: 0.015, texture: 'https://raw.githubusercontent.com/davidkpiano/planets/master/src/assets/textures/venus.jpg' },
+        { name: "Dünya", size: 0.25, distance: 7, speed: 0.01, texture: 'https://unpkg.com/three-globe/example/img/earth-blue-marble.jpg' },
+        { name: "Mars", size: 0.18, distance: 9, speed: 0.008, texture: 'https://raw.githubusercontent.com/davidkpiano/planets/master/src/assets/textures/mars.jpg' },
+        { name: "Jüpiter", size: 0.8, distance: 15, speed: 0.004, texture: 'https://raw.githubusercontent.com/davidkpiano/planets/master/src/assets/textures/jupiter.jpg' },
+        { name: "Satürn", size: 0.7, distance: 20, speed: 0.003, texture: 'https://raw.githubusercontent.com/davidkpiano/planets/master/src/assets/textures/saturn.jpg' },
+        { name: "Uranüs", size: 0.5, distance: 25, speed: 0.002, texture: 'https://raw.githubusercontent.com/davidkpiano/planets/master/src/assets/textures/uranus.jpg' },
+        { name: "Neptün", size: 0.45, distance: 30, speed: 0.0015, texture: 'https://raw.githubusercontent.com/davidkpiano/planets/master/src/assets/textures/neptune.jpg' }
+    ];
+
+    const planets = [];
+
+    planetsData.forEach(data => {
+        // Gezegen küresi
+        const planetGeometry = new THREE.SphereGeometry(data.size, 32, 32);
+        const planetMaterial = new THREE.MeshStandardMaterial({ // Işık alabilmesi için StandardMaterial
+            map: textureLoader.load(data.texture)
+        });
+        const planet = new THREE.Mesh(planetGeometry, planetMaterial);
+        
+        // Yörünge çizgisi
+        const orbitGeometry = new THREE.RingGeometry(data.distance - 0.05, data.distance + 0.05, 64);
+        const orbitMaterial = new THREE.MeshBasicMaterial({ color: 0x555555, side: THREE.DoubleSide });
+        const orbit = new THREE.Mesh(orbitGeometry, orbitMaterial);
+        orbit.rotation.x = Math.PI / 2; // Yörüngeyi yatay konumlandır
+
+        scene.add(orbit); // Yörüngeyi sahneye ekle
+
+        // Gezegenin kendi grubunu oluştur (Güneş etrafında dönmesi için)
+        const planetGroup = new THREE.Group();
+        planetGroup.add(planet);
+        scene.add(planetGroup);
+
+        planets.push({
+            mesh: planet,
+            group: planetGroup,
+            data: data,
+            angle: Math.random() * Math.PI * 2 // Başlangıç açısı rastgele
+        });
+    });
+
+    // --- 5. ETKİLEŞİM (RAYCASTING) VE BİLGİ ETİKETİ ---
+    const raycaster = new THREE.Raycaster();
+    const mouse = new THREE.Vector2();
     const tooltip = document.getElementById('tooltip');
-    const pixelBuffer = new Uint8Array(4); // R, G, B, A (Tek bir pikseli okuyacağız)
+    const tpPlanetName = document.getElementById('tp-planet-name');
+    const tpPlanetInfo = document.getElementById('tp-planet-info');
 
-    function pick(event) {
-        const x = event.clientX;
-        const y = event.clientY;
+    function onMouseMove(event) {
+        mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+        mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
 
-        // 1. Gizli sahneyi (Picking Scene) render al ama ekrana basma (target'a bas)
-        renderer.setRenderTarget(pickingTarget);
-        renderer.render(pickingScene, camera);
+        tooltip.style.left = event.clientX + 'px';
+        tooltip.style.top = event.clientY + 'px';
+    }
 
-        // 2. Mouse'un olduğu yerdeki pikselin rengini oku
-        // WebGL koordinatları sol-alttan başlar, o yüzden Y'yi ters çeviriyoruz.
-        renderer.readRenderTargetPixels(pickingTarget, x, pickingTarget.height - y, 1, 1, pixelBuffer);
-
-        // 3. Normal render işlemine geri dön (Ekrana basılacak görüntü)
-        renderer.setRenderTarget(null);
-
-        // 4. Okunan rengi yorumla
-        const r = pixelBuffer[0];
-        const g = pixelBuffer[1];
-        const b = pixelBuffer[2];
+    function updateInteraction() {
+        raycaster.setFromCamera(mouse, camera);
         
-        // RGB'yi Tekil bir ID numarasına (Hex/Decimal) çevir
-        const id = (r << 16) | (g << 8) | (b);
+        // Gezegenlerin mesh'lerini raycasting için alıyoruz
+        const interactablePlanets = planets.map(p => p.mesh);
+        const intersects = raycaster.intersectObjects(interactablePlanets);
 
-        // 5. Veritabanından kontrol et
-        const data = countryData[id];
-        
-        if (data) {
-            // Şehir/Ülke bulunduysa saati hesapla
-            const now = new Date();
-            const utc = now.getTime() + (now.getTimezoneOffset() * 60000);
-            const targetTime = new Date(utc + (3600000 * data.offset));
-            const timeStr = targetTime.toLocaleTimeString('tr-TR', {hour: '2-digit', minute:'2-digit'});
-
+        if (intersects.length > 0) {
+            const intersectedPlanet = intersects[0].object;
+            const planetData = planets.find(p => p.mesh === intersectedPlanet).data;
+            
+            tpPlanetName.innerText = planetData.name;
+            tpPlanetInfo.innerText = `Boyut: ${planetData.size}x, Uzaklık: ${planetData.distance} birim`;
+            
             tooltip.style.display = 'block';
-            tooltip.style.left = x + 15 + 'px';
-            tooltip.style.top = y + 15 + 'px';
-            tooltip.innerHTML = `<strong>${data.name}</strong><br>Saat: ${timeStr}`;
             document.body.style.cursor = 'pointer';
         } else {
-            // Renk veritabanında yoksa (örn: Okyanus)
             tooltip.style.display = 'none';
             document.body.style.cursor = 'default';
         }
     }
 
-    // --- OPTİMİZASYON ---
-    // Her karede piksel okumak yavaştır. Sadece mouse hareket ettiğinde yapalım.
-    window.addEventListener('mousemove', pick);
+    window.addEventListener('mousemove', onMouseMove, false);
+    window.addEventListener('resize', () => {
+        camera.aspect = window.innerWidth / window.innerHeight;
+        camera.updateProjectionMatrix();
+        renderer.setSize(window.innerWidth, window.innerHeight);
+    });
 
+    // --- 6. ANİMASYON DÖNGÜSÜ ---
     function animate() {
         requestAnimationFrame(animate);
-        controls.update();
+        
+        controls.update(); // OrbitControls için gerekli
+        updateInteraction(); // Raycasting işlemini her karede yap
+
+        // Güneşin kendi ekseni etrafında dönmesi (isteğe bağlı)
+        sun.rotation.y += 0.001; 
+
+        // Gezegenlerin hareketleri
+        planets.forEach(p => {
+            p.angle += p.data.speed;
+            p.group.position.x = Math.cos(p.angle) * p.data.distance;
+            p.group.position.z = Math.sin(p.angle) * p.data.distance;
+            
+            p.mesh.rotation.y += p.data.speed * 5; // Gezegenlerin kendi ekseni etrafında dönmesi
+        });
+
         renderer.render(scene, camera);
     }
-    animate();
 
+    animate();
 </script>
+
 </body>
 </html>
