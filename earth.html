@@ -2,48 +2,44 @@
 <html lang="tr">
 <head>
     <meta charset="UTF-8">
-    <title>3D Güneş Sistemi Simülasyonu</title>
+    <title>3D Dünya ve Saat Dilimleri</title>
     <style>
-        body { margin: 0; overflow: hidden; background-color: #000; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        body { margin: 0; overflow: hidden; background-color: #000; font-family: sans-serif; }
         canvas { display: block; }
         
-        #info {
-            position: absolute; top: 20px; width: 100%; text-align: center;
-            color: rgba(255, 255, 255, 0.8); pointer-events: none; z-index: 5;
-            text-shadow: 0 2px 4px rgba(0,0,0,0.8);
-        }
-
+        /* Saat etiketi stili */
         #tooltip {
             position: absolute;
-            background: rgba(15, 23, 42, 0.9);
-            color: #fff;
-            padding: 12px 18px;
-            border-radius: 8px;
-            border-left: 4px solid #3b82f6;
-            pointer-events: none;
+            background: rgba(0, 0, 0, 0.8);
+            color: #00ffcc;
+            padding: 10px 15px;
+            border-radius: 5px;
+            border: 1px solid #00ffcc;
+            pointer-events: none; /* Mouse olaylarını engellememesi için */
             display: none;
-            backdrop-filter: blur(4px);
-            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
             font-size: 14px;
+            box-shadow: 0 0 10px rgba(0, 255, 204, 0.5);
             z-index: 10;
-            transform: translate(15px, 15px);
         }
         
-        .planet-name { font-size: 20px; font-weight: bold; color: #60a5fa; display: block; margin-bottom: 4px; }
-        .planet-info { font-size: 12px; color: #94a3b8; }
+        #info {
+            position: absolute;
+            top: 20px;
+            width: 100%;
+            text-align: center;
+            color: white;
+            pointer-events: none;
+            text-shadow: 0 0 5px black;
+        }
     </style>
 </head>
 <body>
 
 <div id="info">
-    <h2>3D Güneş Sistemi</h2>
-    <p>Gezegenler üzerinde gezinerek bilgi alabilirsin. Yakınlaşmak ve döndürmek için fareyi kullan.</p>
+    <h2>3D Dünya Saat Hesaplayıcı</h2>
+    <p>Dünya üzerinde gezinerek yerel saati (tahmini) görebilirsin.<br>Döndürmek için tıkla ve sürükle.</p>
 </div>
-
-<div id="tooltip">
-    <span class="planet-name" id="tp-planet-name">Gezegen</span>
-    <span class="planet-info" id="tp-planet-info">Bilgi</span>
-</div>
+<div id="tooltip"></div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
@@ -53,121 +49,115 @@
     const scene = new THREE.Scene();
     
     // Kamera ayarları
-    const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 10000);
-    camera.position.set(0, 5, 20); // Güneş sistemini kapsayacak bir konum
+    const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
+    camera.position.z = 2.5; // Kamerayı biraz geriye çekiyoruz
 
     const renderer = new THREE.WebGLRenderer({ antialias: true });
     renderer.setSize(window.innerWidth, window.innerHeight);
-    renderer.setPixelRatio(window.devicePixelRatio);
     document.body.appendChild(renderer.domElement);
 
-    // Mouse kontrolleri (OrbitControls) - Güneş Sistemini gezmek için
+    // Mouse kontrolleri (OrbitControls)
     const controls = new THREE.OrbitControls(camera, renderer.domElement);
     controls.enableDamping = true;
     controls.dampingFactor = 0.05;
-    controls.minDistance = 2;
-    controls.maxDistance = 100; // Geniş bir alan için maksimum mesafeyi artırıyoruz
-    controls.enablePan = true; // Kaydırmayı etkinleştir
+    controls.minDistance = 1.5;
+    controls.maxDistance = 4;
 
-    // --- 2. UZAY ARKA PLANI (Yıldızlar) ---
-    const starGeo = new THREE.BufferGeometry();
-    const starCount = 5000;
+    // --- 2. DÜNYA OLUŞTURMA ---
+    // Gerçekçi bir görünüm için doku yüklüyoruz
+    const textureLoader = new THREE.TextureLoader();
+    const earthGeometry = new THREE.SphereGeometry(1, 64, 64);
+    
+    // Dünya materyali
+    const earthMaterial = new THREE.MeshPhongMaterial({
+        map: textureLoader.load('https://unpkg.com/three-globe/example/img/earth-blue-marble.jpg'),
+        bumpMap: textureLoader.load('https://unpkg.com/three-globe/example/img/earth-topology.png'),
+        bumpScale: 0.05,
+        specularMap: textureLoader.load('https://unpkg.com/three-globe/example/img/earth-water.png'),
+        specular: new THREE.Color('grey')
+    });
+
+    const earth = new THREE.Mesh(earthGeometry, earthMaterial);
+    scene.add(earth);
+
+    // --- 3. IŞIKLANDIRMA ---
+    const ambientLight = new THREE.AmbientLight(0x333333);
+    scene.add(ambientLight);
+
+    const sunLight = new THREE.DirectionalLight(0xffffff, 1);
+    sunLight.position.set(5, 3, 5);
+    scene.add(sunLight);
+
+    // Arka plana yıldızlar ekleyelim (Basit versiyon)
+    const starGeometry = new THREE.BufferGeometry();
+    const starCount = 1000;
     const starPos = new Float32Array(starCount * 3);
-    for(let i=0; i<starCount*3; i++) starPos[i] = (Math.random() - 0.5) * 2000; // Çok daha geniş bir alan
-    starGeo.setAttribute('position', new THREE.BufferAttribute(starPos, 3));
-    const starMat = new THREE.PointsMaterial({color: 0xffffff, size: 2, transparent: true, opacity: 0.8});
-    const stars = new THREE.Points(starGeo, starMat);
+    for(let i=0; i<starCount*3; i++) {
+        starPos[i] = (Math.random() - 0.5) * 100;
+    }
+    starGeometry.setAttribute('position', new THREE.BufferAttribute(starPos, 3));
+    const starMaterial = new THREE.PointsMaterial({color: 0xffffff, size: 0.1});
+    const stars = new THREE.Points(starGeometry, starMaterial);
     scene.add(stars);
 
-    // --- 3. GÜNEŞ ---
-    const textureLoader = new THREE.TextureLoader();
-    
-    const sunGeometry = new THREE.SphereGeometry(2, 64, 64); // Güneş en büyük
-    const sunMaterial = new THREE.MeshBasicMaterial({ // Güneş kendi ışığını yaydığı için BasicMaterial
-        map: textureLoader.load('https://raw.githubusercontent.com/davidkpiano/planets/master/src/assets/textures/sun.jpg')
-    });
-    const sun = new THREE.Mesh(sunGeometry, sunMaterial);
-    scene.add(sun);
-
-    // Güneşten gelen nokta ışığı
-    const pointLight = new THREE.PointLight(0xffffff, 2, 0, 2); // Renk, yoğunluk, uzaklık, azalma
-    scene.add(pointLight);
-
-    // --- 4. GEZEGENLER VE YÖRÜNGELER ---
-    // Gezegen Verileri (Boyutlar ve uzaklıklar orantılı ama gerçek değil)
-    const planetsData = [
-        { name: "Merkür", size: 0.1, distance: 3, speed: 0.02, texture: 'https://raw.githubusercontent.com/davidkpiano/planets/master/src/assets/textures/mercury.jpg' },
-        { name: "Venüs", size: 0.2, distance: 5, speed: 0.015, texture: 'https://raw.githubusercontent.com/davidkpiano/planets/master/src/assets/textures/venus.jpg' },
-        { name: "Dünya", size: 0.25, distance: 7, speed: 0.01, texture: 'https://unpkg.com/three-globe/example/img/earth-blue-marble.jpg' },
-        { name: "Mars", size: 0.18, distance: 9, speed: 0.008, texture: 'https://raw.githubusercontent.com/davidkpiano/planets/master/src/assets/textures/mars.jpg' },
-        { name: "Jüpiter", size: 0.8, distance: 15, speed: 0.004, texture: 'https://raw.githubusercontent.com/davidkpiano/planets/master/src/assets/textures/jupiter.jpg' },
-        { name: "Satürn", size: 0.7, distance: 20, speed: 0.003, texture: 'https://raw.githubusercontent.com/davidkpiano/planets/master/src/assets/textures/saturn.jpg' },
-        { name: "Uranüs", size: 0.5, distance: 25, speed: 0.002, texture: 'https://raw.githubusercontent.com/davidkpiano/planets/master/src/assets/textures/uranus.jpg' },
-        { name: "Neptün", size: 0.45, distance: 30, speed: 0.0015, texture: 'https://raw.githubusercontent.com/davidkpiano/planets/master/src/assets/textures/neptune.jpg' }
-    ];
-
-    const planets = [];
-
-    planetsData.forEach(data => {
-        // Gezegen küresi
-        const planetGeometry = new THREE.SphereGeometry(data.size, 32, 32);
-        const planetMaterial = new THREE.MeshStandardMaterial({ // Işık alabilmesi için StandardMaterial
-            map: textureLoader.load(data.texture)
-        });
-        const planet = new THREE.Mesh(planetGeometry, planetMaterial);
-        
-        // Yörünge çizgisi
-        const orbitGeometry = new THREE.RingGeometry(data.distance - 0.05, data.distance + 0.05, 64);
-        const orbitMaterial = new THREE.MeshBasicMaterial({ color: 0x555555, side: THREE.DoubleSide });
-        const orbit = new THREE.Mesh(orbitGeometry, orbitMaterial);
-        orbit.rotation.x = Math.PI / 2; // Yörüngeyi yatay konumlandır
-
-        scene.add(orbit); // Yörüngeyi sahneye ekle
-
-        // Gezegenin kendi grubunu oluştur (Güneş etrafında dönmesi için)
-        const planetGroup = new THREE.Group();
-        planetGroup.add(planet);
-        scene.add(planetGroup);
-
-        planets.push({
-            mesh: planet,
-            group: planetGroup,
-            data: data,
-            angle: Math.random() * Math.PI * 2 // Başlangıç açısı rastgele
-        });
-    });
-
-    // --- 5. ETKİLEŞİM (RAYCASTING) VE BİLGİ ETİKETİ ---
+    // --- 4. ETKİLEŞİM (RAYCASTING) VE SAAT HESAPLAMA ---
     const raycaster = new THREE.Raycaster();
     const mouse = new THREE.Vector2();
     const tooltip = document.getElementById('tooltip');
-    const tpPlanetName = document.getElementById('tp-planet-name');
-    const tpPlanetInfo = document.getElementById('tp-planet-info');
 
     function onMouseMove(event) {
+        // Mouse koordinatlarını -1 ile +1 arasına normalize et
         mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
         mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
 
-        tooltip.style.left = event.clientX + 'px';
-        tooltip.style.top = event.clientY + 'px';
+        // Tooltip pozisyonunu güncelle
+        tooltip.style.left = event.clientX + 15 + 'px';
+        tooltip.style.top = event.clientY + 15 + 'px';
+    }
+
+    // Boylamdan saat hesaplama fonksiyonu
+    function calculateTime(longitude) {
+        // Dünya 360 derece, 24 saat dilimi var. Her 15 derece = 1 saat.
+        const offset = Math.round(longitude / 15);
+        
+        const now = new Date();
+        const utc = now.getTime() + (now.getTimezoneOffset() * 60000);
+        const targetTime = new Date(utc + (3600000 * offset));
+        
+        // GMT formatı oluşturma (Örn: GMT+3)
+        const sign = offset >= 0 ? '+' : '';
+        const gmtLabel = `GMT${sign}${offset}`;
+
+        // Saati formatla
+        const timeString = targetTime.toLocaleTimeString('tr-TR', {hour: '2-digit', minute:'2-digit'});
+        
+        return `<strong>${timeString}</strong><br><small>${gmtLabel}</small>`;
     }
 
     function updateInteraction() {
         raycaster.setFromCamera(mouse, camera);
-        
-        // Gezegenlerin mesh'lerini raycasting için alıyoruz
-        const interactablePlanets = planets.map(p => p.mesh);
-        const intersects = raycaster.intersectObjects(interactablePlanets);
+        const intersects = raycaster.intersectObject(earth);
 
         if (intersects.length > 0) {
-            const intersectedPlanet = intersects[0].object;
-            const planetData = planets.find(p => p.mesh === intersectedPlanet).data;
+            const point = intersects[0].point;
             
-            tpPlanetName.innerText = planetData.name;
-            tpPlanetInfo.innerText = `Boyut: ${planetData.size}x, Uzaklık: ${planetData.distance} birim`;
+            // 3D Kesişim noktasını Küresel Koordinatlara (Enlem/Boylam) çevir
+            // Three.js koordinat sisteminde Y yukarıdır.
+            // Boylam hesabı için X ve Z eksenlerini kullanıyoruz.
+            // Math.atan2(z, x) bize radyan cinsinden açıyı verir.
             
+            // Texture haritasının başlangıç noktasına göre düzeltme (-Math.PI/2 döndürme gerekebilir texture'a göre)
+            // Genelde Three.js sphere texture map'i Z ekseninden başlar.
+            
+            let longitude = Math.atan2(point.x, point.z) * (180 / Math.PI); // Radyan -> Derece
+            
+            // Boylamı normalleştir (-180 ile 180 arası)
+            // Not: Texture'un nasıl sarıldığına bağlı olarak ufak kaydırmalar gerekebilir.
+            // Bu örnekte temel matematiksel yaklaşımı kullanıyoruz.
+            
+            tooltip.innerHTML = calculateTime(longitude);
             tooltip.style.display = 'block';
-            document.body.style.cursor = 'pointer';
+            document.body.style.cursor = 'crosshair';
         } else {
             tooltip.style.display = 'none';
             document.body.style.cursor = 'default';
@@ -175,30 +165,23 @@
     }
 
     window.addEventListener('mousemove', onMouseMove, false);
+
+    // Pencere boyutu değişirse güncelle
     window.addEventListener('resize', () => {
         camera.aspect = window.innerWidth / window.innerHeight;
         camera.updateProjectionMatrix();
         renderer.setSize(window.innerWidth, window.innerHeight);
     });
 
-    // --- 6. ANİMASYON DÖNGÜSÜ ---
+    // --- 5. ANİMASYON DÖNGÜSÜ ---
     function animate() {
         requestAnimationFrame(animate);
         
         controls.update(); // OrbitControls için gerekli
         updateInteraction(); // Raycasting işlemini her karede yap
 
-        // Güneşin kendi ekseni etrafında dönmesi (isteğe bağlı)
-        sun.rotation.y += 0.001; 
-
-        // Gezegenlerin hareketleri
-        planets.forEach(p => {
-            p.angle += p.data.speed;
-            p.group.position.x = Math.cos(p.angle) * p.data.distance;
-            p.group.position.z = Math.sin(p.angle) * p.data.distance;
-            
-            p.mesh.rotation.y += p.data.speed * 5; // Gezegenlerin kendi ekseni etrafında dönmesi
-        });
+        // Dünyayı yavaşça kendi etrafında döndür (Opsiyonel)
+        // earth.rotation.y += 0.0005; 
 
         renderer.render(scene, camera);
     }
