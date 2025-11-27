@@ -2,192 +2,137 @@
 <html lang="tr">
 <head>
     <meta charset="UTF-8">
-    <title>3D Dünya ve Saat Dilimleri</title>
+    <title>Gelişmiş 3D Saat Sistemi (GPU Picking)</title>
     <style>
-        body { margin: 0; overflow: hidden; background-color: #000; font-family: sans-serif; }
-        canvas { display: block; }
-        
-        /* Saat etiketi stili */
+        body { margin: 0; overflow: hidden; background: #000; }
         #tooltip {
-            position: absolute;
-            background: rgba(0, 0, 0, 0.8);
-            color: #00ffcc;
-            padding: 10px 15px;
-            border-radius: 5px;
-            border: 1px solid #00ffcc;
-            pointer-events: none; /* Mouse olaylarını engellememesi için */
-            display: none;
-            font-size: 14px;
-            box-shadow: 0 0 10px rgba(0, 255, 204, 0.5);
-            z-index: 10;
-        }
-        
-        #info {
-            position: absolute;
-            top: 20px;
-            width: 100%;
-            text-align: center;
-            color: white;
-            pointer-events: none;
-            text-shadow: 0 0 5px black;
+            position: absolute; background: rgba(0,0,0,0.9); color: #fff;
+            padding: 10px; border: 1px solid #444; pointer-events: none; display: none;
+            font-family: monospace; z-index: 10;
         }
     </style>
 </head>
 <body>
 
-<div id="info">
-    <h2>3D Dünya Saat Hesaplayıcı</h2>
-    <p>Dünya üzerinde gezinerek yerel saati (tahmini) görebilirsin.<br>Döndürmek için tıkla ve sürükle.</p>
-</div>
 <div id="tooltip"></div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
 
 <script>
-    // --- 1. KURULUM ---
-    const scene = new THREE.Scene();
-    
-    // Kamera ayarları
+    // --- VERİTABANI (RENK -> BİLGİ EŞLEŞTİRMESİ) ---
+    // Picking Texture üzerindeki renklerin hangi ülkeye ait olduğu
+    // Gerçek bir uygulamada bu çok uzun bir JSON listesi olur.
+    const countryData = {
+        16711680: { name: "Türkiye", offset: 3 },   // Kırmızı (R:255, G:0, B:0) -> Decimal: 16711680
+        65280:    { name: "Almanya", offset: 1 },   // Yeşil (R:0, G:255, B:0) -> Decimal: 65280
+        255:      { name: "ABD (New York)", offset: -5 }, // Mavi -> Decimal: 255
+        // ... Diğer tüm ülkelerin renk kodları buraya ...
+    };
+
+    // --- TEMEL KURULUM ---
+    const container = document.body;
     const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
-    camera.position.z = 2.5; // Kamerayı biraz geriye çekiyoruz
+    camera.position.z = 2.5;
 
     const renderer = new THREE.WebGLRenderer({ antialias: true });
     renderer.setSize(window.innerWidth, window.innerHeight);
-    document.body.appendChild(renderer.domElement);
+    container.appendChild(renderer.domElement);
 
-    // Mouse kontrolleri (OrbitControls)
     const controls = new THREE.OrbitControls(camera, renderer.domElement);
-    controls.enableDamping = true;
-    controls.dampingFactor = 0.05;
-    controls.minDistance = 1.5;
-    controls.maxDistance = 4;
 
-    // --- 2. DÜNYA OLUŞTURMA ---
-    // Gerçekçi bir görünüm için doku yüklüyoruz
+    // --- 1. GÖRÜNEN SAHNE (Main Scene) ---
+    const scene = new THREE.Scene();
     const textureLoader = new THREE.TextureLoader();
-    const earthGeometry = new THREE.SphereGeometry(1, 64, 64);
-    
-    // Dünya materyali
-    const earthMaterial = new THREE.MeshPhongMaterial({
-        map: textureLoader.load('https://unpkg.com/three-globe/example/img/earth-blue-marble.jpg'),
-        bumpMap: textureLoader.load('https://unpkg.com/three-globe/example/img/earth-topology.png'),
-        bumpScale: 0.05,
-        specularMap: textureLoader.load('https://unpkg.com/three-globe/example/img/earth-water.png'),
-        specular: new THREE.Color('grey')
-    });
 
-    const earth = new THREE.Mesh(earthGeometry, earthMaterial);
+    const geometry = new THREE.SphereGeometry(1, 64, 64);
+    const material = new THREE.MeshPhongMaterial({
+        map: textureLoader.load('https://unpkg.com/three-globe/example/img/earth-blue-marble.jpg'), // Görsel Kaplama
+    });
+    const earth = new THREE.Mesh(geometry, material);
     scene.add(earth);
 
-    // --- 3. IŞIKLANDIRMA ---
-    const ambientLight = new THREE.AmbientLight(0x333333);
-    scene.add(ambientLight);
+    // Işıklar
+    const light = new THREE.DirectionalLight(0xffffff, 1);
+    light.position.set(5, 3, 5);
+    scene.add(light);
+    scene.add(new THREE.AmbientLight(0x333333));
 
-    const sunLight = new THREE.DirectionalLight(0xffffff, 1);
-    sunLight.position.set(5, 3, 5);
-    scene.add(sunLight);
 
-    // Arka plana yıldızlar ekleyelim (Basit versiyon)
-    const starGeometry = new THREE.BufferGeometry();
-    const starCount = 1000;
-    const starPos = new Float32Array(starCount * 3);
-    for(let i=0; i<starCount*3; i++) {
-        starPos[i] = (Math.random() - 0.5) * 100;
-    }
-    starGeometry.setAttribute('position', new THREE.BufferAttribute(starPos, 3));
-    const starMaterial = new THREE.PointsMaterial({color: 0xffffff, size: 0.1});
-    const stars = new THREE.Points(starGeometry, starMaterial);
-    scene.add(stars);
+    // --- 2. GİZLİ SAHNE (Picking Scene) ---
+    // Bu sahne ekrana çizilmez, bellekte tutulur.
+    const pickingScene = new THREE.Scene();
+    const pickingTarget = new THREE.WebGLRenderTarget(window.innerWidth, window.innerHeight);
+    
+    // Picking Texture'ı (Buraya renkli harita yüklenmeli)
+    // ÖRNEK İÇİN: Görseli kullanıyoruz ama normalde düz renkli harita olmalı.
+    const pickingTexture = textureLoader.load('https://unpkg.com/three-globe/example/img/earth-blue-marble.jpg'); 
+    // NOT: Picking materyalinde ışık/gölge OLMAZ. Sadece düz renk (MeshBasicMaterial) kullanılır.
+    const pickingMaterial = new THREE.MeshBasicMaterial({ map: pickingTexture });
+    const pickingEarth = new THREE.Mesh(geometry, pickingMaterial);
+    pickingScene.add(pickingEarth);
 
-    // --- 4. ETKİLEŞİM (RAYCASTING) VE SAAT HESAPLAMA ---
-    const raycaster = new THREE.Raycaster();
-    const mouse = new THREE.Vector2();
+
+    // --- 3. RENK OKUMA VE ETKİLEŞİM ---
     const tooltip = document.getElementById('tooltip');
+    const pixelBuffer = new Uint8Array(4); // R, G, B, A (Tek bir pikseli okuyacağız)
 
-    function onMouseMove(event) {
-        // Mouse koordinatlarını -1 ile +1 arasına normalize et
-        mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
-        mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+    function pick(event) {
+        const x = event.clientX;
+        const y = event.clientY;
 
-        // Tooltip pozisyonunu güncelle
-        tooltip.style.left = event.clientX + 15 + 'px';
-        tooltip.style.top = event.clientY + 15 + 'px';
-    }
+        // 1. Gizli sahneyi (Picking Scene) render al ama ekrana basma (target'a bas)
+        renderer.setRenderTarget(pickingTarget);
+        renderer.render(pickingScene, camera);
 
-    // Boylamdan saat hesaplama fonksiyonu
-    function calculateTime(longitude) {
-        // Dünya 360 derece, 24 saat dilimi var. Her 15 derece = 1 saat.
-        const offset = Math.round(longitude / 15);
+        // 2. Mouse'un olduğu yerdeki pikselin rengini oku
+        // WebGL koordinatları sol-alttan başlar, o yüzden Y'yi ters çeviriyoruz.
+        renderer.readRenderTargetPixels(pickingTarget, x, pickingTarget.height - y, 1, 1, pixelBuffer);
+
+        // 3. Normal render işlemine geri dön (Ekrana basılacak görüntü)
+        renderer.setRenderTarget(null);
+
+        // 4. Okunan rengi yorumla
+        const r = pixelBuffer[0];
+        const g = pixelBuffer[1];
+        const b = pixelBuffer[2];
         
-        const now = new Date();
-        const utc = now.getTime() + (now.getTimezoneOffset() * 60000);
-        const targetTime = new Date(utc + (3600000 * offset));
+        // RGB'yi Tekil bir ID numarasına (Hex/Decimal) çevir
+        const id = (r << 16) | (g << 8) | (b);
+
+        // 5. Veritabanından kontrol et
+        const data = countryData[id];
         
-        // GMT formatı oluşturma (Örn: GMT+3)
-        const sign = offset >= 0 ? '+' : '';
-        const gmtLabel = `GMT${sign}${offset}`;
+        if (data) {
+            // Şehir/Ülke bulunduysa saati hesapla
+            const now = new Date();
+            const utc = now.getTime() + (now.getTimezoneOffset() * 60000);
+            const targetTime = new Date(utc + (3600000 * data.offset));
+            const timeStr = targetTime.toLocaleTimeString('tr-TR', {hour: '2-digit', minute:'2-digit'});
 
-        // Saati formatla
-        const timeString = targetTime.toLocaleTimeString('tr-TR', {hour: '2-digit', minute:'2-digit'});
-        
-        return `<strong>${timeString}</strong><br><small>${gmtLabel}</small>`;
-    }
-
-    function updateInteraction() {
-        raycaster.setFromCamera(mouse, camera);
-        const intersects = raycaster.intersectObject(earth);
-
-        if (intersects.length > 0) {
-            const point = intersects[0].point;
-            
-            // 3D Kesişim noktasını Küresel Koordinatlara (Enlem/Boylam) çevir
-            // Three.js koordinat sisteminde Y yukarıdır.
-            // Boylam hesabı için X ve Z eksenlerini kullanıyoruz.
-            // Math.atan2(z, x) bize radyan cinsinden açıyı verir.
-            
-            // Texture haritasının başlangıç noktasına göre düzeltme (-Math.PI/2 döndürme gerekebilir texture'a göre)
-            // Genelde Three.js sphere texture map'i Z ekseninden başlar.
-            
-            let longitude = Math.atan2(point.x, point.z) * (180 / Math.PI); // Radyan -> Derece
-            
-            // Boylamı normalleştir (-180 ile 180 arası)
-            // Not: Texture'un nasıl sarıldığına bağlı olarak ufak kaydırmalar gerekebilir.
-            // Bu örnekte temel matematiksel yaklaşımı kullanıyoruz.
-            
-            tooltip.innerHTML = calculateTime(longitude);
             tooltip.style.display = 'block';
-            document.body.style.cursor = 'crosshair';
+            tooltip.style.left = x + 15 + 'px';
+            tooltip.style.top = y + 15 + 'px';
+            tooltip.innerHTML = `<strong>${data.name}</strong><br>Saat: ${timeStr}`;
+            document.body.style.cursor = 'pointer';
         } else {
+            // Renk veritabanında yoksa (örn: Okyanus)
             tooltip.style.display = 'none';
             document.body.style.cursor = 'default';
         }
     }
 
-    window.addEventListener('mousemove', onMouseMove, false);
+    // --- OPTİMİZASYON ---
+    // Her karede piksel okumak yavaştır. Sadece mouse hareket ettiğinde yapalım.
+    window.addEventListener('mousemove', pick);
 
-    // Pencere boyutu değişirse güncelle
-    window.addEventListener('resize', () => {
-        camera.aspect = window.innerWidth / window.innerHeight;
-        camera.updateProjectionMatrix();
-        renderer.setSize(window.innerWidth, window.innerHeight);
-    });
-
-    // --- 5. ANİMASYON DÖNGÜSÜ ---
     function animate() {
         requestAnimationFrame(animate);
-        
-        controls.update(); // OrbitControls için gerekli
-        updateInteraction(); // Raycasting işlemini her karede yap
-
-        // Dünyayı yavaşça kendi etrafında döndür (Opsiyonel)
-        // earth.rotation.y += 0.0005; 
-
+        controls.update();
         renderer.render(scene, camera);
     }
-
     animate();
-</script>
 
+</script>
 </body>
 </html>
