@@ -3,159 +3,327 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Terminal Portfolio</title>
+    <title>Padros</title>
     <style>
-        /* CSS: Tasarım Kısmı */
+        /* --- CSS TASARIMI --- */
         body {
-            background-color: #0d1117; /* Koyu arka plan */
-            color: #00ff41; /* Hacker yeşili */
-            font-family: 'Courier New', Courier, monospace; /* Terminal fontu */
+            background-color: #0d1117;
+            color: #00ff41;
+            font-family: 'Courier New', Courier, monospace;
             margin: 0;
             padding: 20px;
             font-size: 16px;
-            overflow-x: hidden;
+            height: 100vh;
+            box-sizing: border-box;
+            overflow-y: auto;
         }
 
-        #terminal {
-            max-width: 800px;
-            margin: 0 auto;
+        /* Hafif bir ekran titremesi ve tarama çizgisi efekti (CRT hissi) */
+        body::before {
+            content: " ";
+            display: block;
+            position: fixed;
+            top: 0; left: 0; bottom: 0; right: 0;
+            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06));
+            z-index: 2;
+            background-size: 100% 2px, 3px 100%;
+            pointer-events: none;
         }
 
-        .output-line {
-            margin-bottom: 5px;
-            white-space: pre-wrap; /* Uzun metinleri alt satıra atar */
-        }
+        #terminal { max-width: 900px; margin: 0 auto; padding-bottom: 50px; }
+        .output-line { margin-bottom: 5px; white-space: pre-wrap; line-height: 1.4; }
+        
+        .directory { color: #5ea1ff; font-weight: bold; } /* Klasör rengi */
+        .file { color: #ffffff; } /* Dosya rengi */
+        .error { color: #ff4444; }
+        .success { color: #00ff41; }
 
-        .input-area {
-            display: flex;
-            align-items: center;
-        }
-
+        .input-area { display: flex; align-items: center; margin-top: 10px; }
+        
         .prompt {
-            color: #ff0055; /* Kullanıcı adı rengi */
+            color: #ff0055;
             margin-right: 10px;
+            white-space: nowrap;
         }
 
-        /* Input alanını gizleyip sadece imleç gibi davranmasını sağlıyoruz */
         input[type="text"] {
             background: transparent;
             border: none;
-            color: #00ff41;
+            color: #fff;
             font-family: 'Courier New', Courier, monospace;
             font-size: 16px;
             flex-grow: 1;
             outline: none;
+            caret-color: #00ff41; /* İmleç rengi */
         }
-
-        .command-response {
-            color: #e6e6e6; /* Cevap metinleri biraz daha açık renk olsun */
-            margin-bottom: 15px;
-            display: block;
-        }
+        
+        a { color: #fff; text-decoration: underline; }
     </style>
 </head>
 <body>
 
     <div id="terminal">
         <div id="history">
-            <div class="output-line">Sisteme hoşgeldiniz. Komut listesi için 'help' yazın.</div>
+            <div class="output-line">Padros - Alihan Karakuş</div>
+            <div class="output-line">Komut listesi için 'help' yazın. Klasörlerde gezmek için 'ls' ve 'cd' kullanın.</div>
+            <div class="output-line">-----------------------------------------------------</div>
         </div>
         
         <div class="input-area">
-            <span class="prompt">ziyaretci@site:~$</span>
+            <span class="prompt" id="promptLabel">ziyatetçi@system:~$</span>
             <input type="text" id="commandInput" autocomplete="off" autofocus>
         </div>
     </div>
 
     <script>
-        // JAVASCRIPT: Mantık Kısmı
+        /* --- JAVASCRIPT MANTIĞI --- */
+
+        // 1. DOSYA SİSTEMİ (File System)
+        // Klasörler obje, dosyalar string (içerik) olarak tanımlandı.
+        const fileSystem = {
+            "root": {
+                "hakkimda.txt": "Merhaba! Ben Alihan KARAKUŞ(Padros), Felsefe, Teoloji ve Animeler ile ilgileniyorum.",
+                "iletisim.txt": "Email: padrosum@proton.me\",
+                "projeler": { // Bu bir klasör
+                    "website.txt": "Bu terminal sitesi HTML/JS ile yapıldı. Gemini tarafından kodlandı. ",
+                    "oyun.exe": "Oyun yapmıyorum cnmm.",
+                    "eski_projeler": {
+                        "v1.txt": "Sitenin ilk versiyonu."
+                    }
+                },
+                "gizli": {
+                    "sifreler.txt": "Erişim engellendi! Şaka şaka, şifre yok :)"
+                }
+            }
+        };
+
+        // Değişkenler
+        let currentPath = []; // Boş dizi = root
+        let commandHistory = [];
+        let historyIndex = -1;
+        
+        // DOM Elemanları
         const input = document.getElementById('commandInput');
-        const history = document.getElementById('history');
-        const terminal = document.getElementById('terminal');
+        const historyDiv = document.getElementById('history');
+        const promptLabel = document.getElementById('promptLabel');
 
-        // Sayfa herhangi bir yerine tıklandığında inputa odaklan
-        document.addEventListener('click', () => {
-            input.focus();
-        });
+        // Ses Efektleri (Web Audio API - Dış dosya gerektirmez)
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        
+        function playSound(type) {
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+            const osc = audioCtx.createOscillator();
+            const gainNode = audioCtx.createGain();
+            
+            osc.connect(gainNode);
+            gainNode.connect(audioCtx.destination);
 
-        input.addEventListener('keydown', function(event) {
-            if (event.key === 'Enter') {
-                const command = input.value.trim().toLowerCase();
+            if (type === 'type') {
+                // Mekanik klavye benzeri kısa tık sesi
+                osc.type = 'triangle';
+                osc.frequency.setValueAtTime(800, audioCtx.currentTime);
+                gainNode.gain.setValueAtTime(0.05, audioCtx.currentTime);
+                osc.start();
+                osc.stop(audioCtx.currentTime + 0.05);
+            } else if (type === 'enter') {
+                // Enter için daha "dijital" bir bip
+                osc.type = 'square';
+                osc.frequency.setValueAtTime(220, audioCtx.currentTime);
+                gainNode.gain.setValueAtTime(0.1, audioCtx.currentTime);
+                osc.start();
+                osc.stop(audioCtx.currentTime + 0.1);
+            }
+        }
+
+        // --- YARDIMCI FONKSİYONLAR ---
+
+        // Mevcut dizin objesini döndürür (Örn: root -> projeler)
+        function getCurrentDirObject() {
+            let current = fileSystem["root"];
+            for (let folder of currentPath) {
+                current = current[folder];
+            }
+            return current;
+        }
+
+        // Prompt yazısını günceller (root@system:~/projeler$)
+        function updatePrompt() {
+            const pathStr = currentPath.length === 0 ? "~" : "~/" + currentPath.join("/");
+            promptLabel.innerText = `root@system:${pathStr}$`;
+        }
+
+        // Ekrana çıktı basma
+        function printToScreen(text, className = "") {
+            const div = document.createElement('div');
+            div.className = "output-line " + className;
+            div.innerHTML = text.replace(/\n/g, "<br>");
+            historyDiv.appendChild(div);
+            window.scrollTo(0, document.body.scrollHeight);
+        }
+
+        // --- OLAY DİNLEYİCİLERİ (Event Listeners) ---
+
+        document.addEventListener('click', () => input.focus());
+
+        input.addEventListener('keydown', function(e) {
+            
+            // SES: Her tuşa basıldığında (Enter hariç)
+            if(e.key !== 'Enter') playSound('type');
+
+            // 1. TAB TUŞU (Otomatik Tamamlama)
+            if (e.key === 'Tab') {
+                e.preventDefault(); // Odaktan çıkmayı engelle
+                const currentVal = input.value.trim();
+                if (!currentVal) return;
+
+                const args = currentVal.split(" ");
+                const lastArg = args[args.length - 1]; // Son yazılan kelimeyi al
+
+                // Olası tamamlamalar: Komutlar + Mevcut klasördeki dosyalar
+                const commands = ['help', 'clear', 'ls', 'cd', 'cat', 'pwd', 'whoami'];
+                const currentDir = getCurrentDirObject();
+                const files = Object.keys(currentDir);
+                const candidates = [...commands, ...files];
+
+                const match = candidates.find(c => c.startsWith(lastArg));
                 
-                // 1. Yazılan komutu ekrana bas (Sanki terminalde kalmış gibi)
-                addToHistory("ziyaretci@site:~$ " + input.value, "prompt-style");
-                
-                // 2. Komutu işle ve cevap ver
-                processCommand(command);
+                if (match) {
+                    // Tamamla
+                    args[args.length - 1] = match;
+                    input.value = args.join(" ");
+                }
+            }
 
-                // 3. Inputu temizle ve ekranı aşağı kaydır
+            // 2. YUKARI / AŞAĞI OK (Geçmiş)
+            if (e.key === 'ArrowUp') {
+                if (historyIndex > 0) {
+                    historyIndex--;
+                    input.value = commandHistory[historyIndex];
+                }
+                e.preventDefault();
+            } else if (e.key === 'ArrowDown') {
+                if (historyIndex < commandHistory.length - 1) {
+                    historyIndex++;
+                    input.value = commandHistory[historyIndex];
+                } else {
+                    historyIndex = commandHistory.length;
+                    input.value = "";
+                }
+                e.preventDefault();
+            }
+
+            // 3. ENTER TUŞU (Komut İşleme)
+            if (e.key === 'Enter') {
+                playSound('enter');
+                const rawCommand = input.value;
+                const parts = rawCommand.trim().split(" ");
+                const cmd = parts[0].toLowerCase();
+                const args = parts.slice(1);
+
+                // Geçmişe ekle
+                if (rawCommand.trim() !== "") {
+                    commandHistory.push(rawCommand);
+                    historyIndex = commandHistory.length;
+                }
+
+                // Eski satırı ekrana sabitle
+                printToScreen(`<span style="color:#ff0055">${promptLabel.innerText}</span> ${rawCommand}`);
+                
+                // Komutu işle
                 input.value = '';
-                window.scrollTo(0, document.body.scrollHeight);
+                processCommand(cmd, args);
             }
         });
 
-        function processCommand(cmd) {
-            let response = "";
+        // --- KOMUT İŞLEME MERKEZİ ---
+
+        function processCommand(cmd, args) {
+            const currentDir = getCurrentDirObject();
 
             switch(cmd) {
                 case 'help':
-                    response = "Kullanılabilir komutlar:\n" +
-                               "- about    : Benim hakkımda bilgi verir.\n" +
-                               "- projects : Projelerimi listeler.\n" +
-                               "- contact  : İletişim bilgilerimi gösterir.\n" +
-                               "- clear    : Ekranı temizler.\n" +
-                               "- social   : Sosyal medya hesapları.";
-                    break;
-                
-                case 'about':
-                    response = "Merhaba! Ben bir Web Geliştiricisiyim. HTML, CSS ve JS ile harikalar yaratmayı severim.";
+                    printToScreen(`
+Kullanılabilir Komutlar:
+- ls       : Dosya ve klasörleri listeler.
+- cd [ad]  : Klasöre girer (Geri gitmek için 'cd ..').
+- cat [ad] : Dosya içeriğini okur.
+- clear    : Ekranı temizler.
+- pwd      : Mevcut yolu gösterir.
+                    `);
                     break;
 
-                case 'projects':
-                    response = "Projelerim:\n1. E-Ticaret Sitesi\n2. Terminal Portföy (Şu an buradasınız!)\n3. Yapay Zeka Chatbot";
+                case 'ls':
+                    // Klasörleri ve dosyaları ayırt et
+                    let output = "";
+                    const items = Object.keys(currentDir);
+                    if(items.length === 0) {
+                        printToScreen("Klasör boş.", "error");
+                        return;
+                    }
+                    items.forEach(item => {
+                        if (typeof currentDir[item] === 'object') {
+                            output += `<span class="directory">${item}/</span>  `;
+                        } else {
+                            output += `<span class="file">${item}</span>  `;
+                        }
+                    });
+                    printToScreen(output);
                     break;
 
-                case 'contact':
-                    response = "Email: ornek@email.com\nTelefon: +90 555 555 55 55";
+                case 'cd':
+                    const target = args[0];
+                    if (!target) {
+                        printToScreen("Hata: Hedef klasör belirtilmedi.", "error");
+                        return;
+                    }
+                    
+                    if (target === "..") {
+                        if (currentPath.length > 0) {
+                            currentPath.pop();
+                            updatePrompt();
+                        }
+                    } else {
+                        if (currentDir[target] && typeof currentDir[target] === 'object') {
+                            currentPath.push(target);
+                            updatePrompt();
+                        } else {
+                            printToScreen(`Hata: '${target}' bir klasör değil veya yok.`, "error");
+                        }
+                    }
                     break;
 
-                case 'social':
-                     // HTML içeriği de döndürebilirsiniz
-                    response = "Github: <a href='#' style='color:#fff'>github.com/user</a>\nLinkedin: linkedin.com/in/user";
+                case 'cat':
+                    const fileTarget = args[0];
+                    if (!fileTarget) {
+                        printToScreen("Hata: Dosya adı belirtilmedi.", "error");
+                        return;
+                    }
+
+                    if (currentDir[fileTarget] && typeof currentDir[fileTarget] === 'string') {
+                        printToScreen(currentDir[fileTarget]);
+                    } else {
+                        printToScreen(`Hata: '${fileTarget}' okunamadı veya bir klasör.`, "error");
+                    }
                     break;
 
                 case 'clear':
-                    history.innerHTML = "";
-                    return; // Clear komutunda aşağıya inip response yazdırmasın diye.
+                    historyDiv.innerHTML = "";
+                    break;
 
+                case 'pwd':
+                    printToScreen("/root/" + currentPath.join("/"));
+                    break;
+
+                case 'whoami':
+                    printToScreen("ziyaretci");
+                    break;
+                
                 case '':
-                    return; // Boş enter'a basılırsa tepki verme.
+                    break;
 
                 default:
-                    response = "Komut bulunamadı: " + cmd + ". 'help' yazarak listeyi görebilirsiniz.";
-                    break;
+                    printToScreen(`Komut bulunamadı: ${cmd}`, "error");
             }
-
-            addToHistory(response, "response-style");
-        }
-
-        function addToHistory(text, type) {
-            const div = document.createElement('div');
-            div.className = 'output-line';
-            
-            if (type === "prompt-style") {
-                div.style.color = "#00ff41"; // Komut rengi
-            } else {
-                div.className += " command-response"; // Cevap rengi
-                div.innerHTML = text.replace(/\n/g, "<br>"); // Satır başlarını HTML <br>'e çevir
-            }
-
-            // Eğer HTML tagı içermiyorsa textContent, içeriyorsa innerHTML (güvenlik için dikkatli olunmalı)
-            if(!text.includes("<a href")) {
-                 div.innerText = div.innerText; // Basit text
-            }
-            
-            history.appendChild(div);
         }
     </script>
 </body>
