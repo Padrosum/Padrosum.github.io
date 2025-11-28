@@ -10,7 +10,6 @@
             --neon-color: #0f0; /* Ana yeşil neon */
             --neon-glow: #00ff41;
             --bg-color: #050505;
-            --screen-flicker-opacity: 0.15;
         }
 
         body {
@@ -19,7 +18,7 @@
             font-family: 'Courier New', Courier, monospace;
             margin: 0;
             height: 100vh;
-            overflow: hidden; /* Scrollbar'ı gizle, içeriden kaydıracağız */
+            overflow: hidden; 
             display: flex;
             justify-content: center;
             align-items: center;
@@ -49,14 +48,10 @@
 
         /* Ekran Titreme Animasyonu */
         @keyframes flicker {
-            0% { opacity: 0.97; }
-            5% { opacity: 0.95; }
-            10% { opacity: 0.9; }
-            15% { opacity: 0.95; }
-            20% { opacity: 0.99; }
-            50% { opacity: 0.95; }
-            55% { opacity: 0.9; }
-            60% { opacity: 0.95; }
+            0% { opacity: 0.97; } 5% { opacity: 0.95; }
+            10% { opacity: 0.9; } 15% { opacity: 0.95; }
+            20% { opacity: 0.99; } 50% { opacity: 0.95; }
+            55% { opacity: 0.9; } 60% { opacity: 0.95; }
             100% { opacity: 0.98; }
         }
 
@@ -73,6 +68,7 @@
 
         /* Scrollbar gizleme */
         #screen-content::-webkit-scrollbar { width: 0px; }
+        #screen-content::-moz-scrollbar { width: 0px; }
 
         .output-line {
             margin-bottom: 5px;
@@ -130,6 +126,7 @@
             font-size: 24px;
             animation: blink 1s infinite;
             text-align: center;
+            text-shadow: 0 0 5px var(--neon-color);
         }
         @keyframes blink { 50% { opacity: 0; } }
 
@@ -154,7 +151,7 @@
     </div>
 
     <script>
-        /* --- SİSTEM YAPILANDIRMASI --- */
+        /* --- JAVASCRIPT: SİSTEM YAPILANDIRMASI --- */
         const fileSystem = {
             "root": {
                 "readme.txt": "Neon Terminal v3'e hoşgeldiniz. Bu sistem HTML/JS ile çalışır.",
@@ -166,6 +163,12 @@
                     "web": {
                         "site.html": "<html><body>Hello World</body></html>"
                     }
+                },
+                // YENİ KLASÖR EKLENDİ
+                "Padros": { 
+                    "hakkimda.txt": "Ben, bu terminal sitesini tasarlayan kişiyim. HTML, CSS ve JavaScript kullanıyorum.",
+                    "sosyal_media.txt": "Github: github.com/user\nLinkedin: linkedin.com/in/user",
+                    "yazilarim.txt": "En son yazı: Terminal Simülasyonu Yapımı (2025)"
                 },
                 "gizli": {
                     "passwords.txt": "admin: 123456\nroot: toor"
@@ -203,7 +206,6 @@
             gainNode.connect(audioCtx.destination);
 
             if (type === 'key') {
-                // Tuş sesi (mekanik tık)
                 osc.type = 'square';
                 osc.frequency.setValueAtTime(600, audioCtx.currentTime);
                 osc.frequency.exponentialRampToValueAtTime(100, audioCtx.currentTime + 0.05);
@@ -211,14 +213,12 @@
                 osc.start();
                 osc.stop(audioCtx.currentTime + 0.05);
             } else if (type === 'enter') {
-                // Enter sesi (dijital bip)
                 osc.type = 'sawtooth';
                 osc.frequency.setValueAtTime(800, audioCtx.currentTime);
                 gainNode.gain.setValueAtTime(0.05, audioCtx.currentTime);
                 osc.start();
                 osc.stop(audioCtx.currentTime + 0.1);
             } else if (type === 'error') {
-                // Hata sesi
                 osc.type = 'sawtooth';
                 osc.frequency.setValueAtTime(150, audioCtx.currentTime);
                 gainNode.gain.setValueAtTime(0.1, audioCtx.currentTime);
@@ -243,29 +243,28 @@
                 "LOADING NEON INTERFACE v3.0...",
                 "CONNECTING TO SERVER... SUCCESS",
                 "----------------------------------------",
-                "NEON OS READY."
+                "NEON OS READY. Komut listesi için 'help' yazın."
             ];
 
             for (let text of bootTexts) {
-                await new Promise(r => setTimeout(r, 200)); // Gecikme
+                await new Promise(r => setTimeout(r, 200)); 
                 printToScreen(text, "system");
                 playSound('key');
             }
             
-            // Input alanını göster
             isBooting = false;
             inputArea.style.opacity = 1;
             input.focus();
         }
 
-        /* --- TEMEL FONKSİYONLAR --- */
+        /* --- TEMEL YARDIMCI FONKSİYONLAR --- */
         function getCurrentDirObject() {
             let current = fileSystem["root"];
             for (let folder of currentPath) {
                 if(current[folder]) {
                     current = current[folder];
                 } else {
-                    return null; // Yol bozuksa
+                    return null;
                 }
             }
             return current;
@@ -281,7 +280,6 @@
             div.className = "output-line " + className;
             div.innerHTML = text.replace(/\n/g, "<br>");
             historyDiv.appendChild(div);
-            // Otomatik aşağı kaydır
             screenContent.scrollTop = screenContent.scrollHeight;
         }
 
@@ -353,7 +351,7 @@
             }
         });
 
-        /* --- KOMUT MANTIĞI --- */
+        /* --- KOMUT İŞLEME MERKEZİ --- */
         function processCommand(cmd, args) {
             const currentDir = getCurrentDirObject();
             if (!currentDir) {
@@ -365,7 +363,7 @@
 
             switch(cmd) {
                 case 'help':
-                    printToScreen("KOMUTLAR: ls, cd, cat, clear, pwd, matrix, help", "system");
+                    printToScreen("KOMUTLAR: ls, cd, cat, clear, pwd, matrix, help, whoami", "system");
                     break;
                 
                 case 'ls':
@@ -387,15 +385,28 @@
 
                 case 'cd':
                     const target = args[0];
-                    if (!target) return;
+                    
+                    if (!target) {
+                        currentPath = []; // argüman yoksa kök dizine döner
+                        updatePrompt();
+                        return;
+                    }
                     
                     if (target === "..") {
                         if (currentPath.length > 0) currentPath.pop();
                     } else if (currentDir[target] && typeof currentDir[target] === 'object') {
+                        // SADECE KLASÖRE GİRİŞ İZNİ
                         currentPath.push(target);
-                    } else {
+                    } else if (currentDir[target] && typeof currentDir[target] === 'string') {
+                        // Hata: Dosyaya girmeye çalışılıyor.
                         playSound('error');
-                        printToScreen(`Hata: '${target}' bir klasör değil.`, "error");
+                        printToScreen(`Hata: '${target}' bir klasör değil. Dosya içeriğini okumak için 'cat ${target}' kullanın.`, "error");
+                        return;
+                    } 
+                    else {
+                        playSound('error');
+                        printToScreen(`Hata: '${target}' bulunamadı.`, "error");
+                        return;
                     }
                     updatePrompt();
                     break;
@@ -418,9 +429,16 @@
                     printToScreen("/root/" + currentPath.join("/"));
                     break;
 
+                case 'whoami':
+                    printToScreen("user");
+                    break;
+
                 case 'matrix':
                     printToScreen("Matrix modu aktif ediliyor... (Durdurmak için sayfayı yenile)", "system");
                     startMatrixEffect();
+                    break;
+                
+                case '':
                     break;
 
                 default:
@@ -437,7 +455,7 @@
             canvas.style.left = '0';
             canvas.style.width = '100%';
             canvas.style.height = '100%';
-            canvas.style.zIndex = '998'; // Yazıların altında, arkaplanın üstünde
+            canvas.style.zIndex = '998'; 
             canvas.style.opacity = '0.3';
             document.body.appendChild(canvas);
 
@@ -445,9 +463,7 @@
             canvas.width = window.innerWidth;
             canvas.height = window.innerHeight;
 
-            const katakana = 'アァカサタナハマヤャラワガザダバパイィキシチニヒミリヂビピウゥクスツヌフムユュルグズブヅプエェケセテネヘメレゲゼデベペオォコソトノホモヨョロヲゴゾドボポヴッン';
-            const latin = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
-            const alphabet = katakana + latin;
+            const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789アァカサタナハマヤャラワガザダバパイィキシチニヒミリヂビピウゥクスツヌフムユュルグズブヅプエェケセテネヘメレゲゼデベペオォコソトノホモヨョロヲゴゾドボポヴッン';
 
             const fontSize = 16;
             const columns = canvas.width / fontSize;
