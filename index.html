@@ -3,56 +3,160 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Yazar Portföyü | Padros</title>
-    <link rel="stylesheet" href="style.css">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;500;700&display=swap" rel="stylesheet">
+    <title>Terminal Portfolio</title>
+    <style>
+        /* CSS: Tasarım Kısmı */
+        body {
+            background-color: #0d1117; /* Koyu arka plan */
+            color: #00ff41; /* Hacker yeşili */
+            font-family: 'Courier New', Courier, monospace; /* Terminal fontu */
+            margin: 0;
+            padding: 20px;
+            font-size: 16px;
+            overflow-x: hidden;
+        }
+
+        #terminal {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        .output-line {
+            margin-bottom: 5px;
+            white-space: pre-wrap; /* Uzun metinleri alt satıra atar */
+        }
+
+        .input-area {
+            display: flex;
+            align-items: center;
+        }
+
+        .prompt {
+            color: #ff0055; /* Kullanıcı adı rengi */
+            margin-right: 10px;
+        }
+
+        /* Input alanını gizleyip sadece imleç gibi davranmasını sağlıyoruz */
+        input[type="text"] {
+            background: transparent;
+            border: none;
+            color: #00ff41;
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 16px;
+            flex-grow: 1;
+            outline: none;
+        }
+
+        .command-response {
+            color: #e6e6e6; /* Cevap metinleri biraz daha açık renk olsun */
+            margin-bottom: 15px;
+            display: block;
+        }
+    </style>
 </head>
 <body>
 
-    <header class="header">
-        <h1>Padros</h1>
-        <nav>
-            <a href="#home">Ana Sayfa</a>
-            <a href="#archive">Yazılarım</a>
-            <a href="#about">Hakkımda</a>
-            <a href="#contact">İletişim</a>
-        </nav>
-    </header>
-
-    <main>
-        <section id="home" class="section">
-            <h2 class="hero-text">Okuyuculara rehberlik eden yazılar.</h2>
-            <p>Son paylaşımlarım:</p>
-            <div id="latest-posts" class="archive-list latest">
-                </div>
-            <a href="#archive" class="button">Tüm Arşivi Gör</a>
-        </section>
+    <div id="terminal">
+        <div id="history">
+            <div class="output-line">Sisteme hoşgeldiniz. Komut listesi için 'help' yazın.</div>
+        </div>
         
-        <section id="archive" class="section">
-            <h2>Yazılarım Arşivi</h2>
-            <div id="full-archive" class="archive-list full">
-                </div>
-        </section>
+        <div class="input-area">
+            <span class="prompt">ziyaretci@site:~$</span>
+            <input type="text" id="commandInput" autocomplete="off" autofocus>
+        </div>
+    </div>
 
-        <section id="about" class="section">
-            <h2>Hakkımda</h2>
-            <p>Felsefe, Teoloji vesaire konuları üzerine yazılar yazıyoruz kardeşcanlar</p>
-            <p>Daha fazla bilgi için diğer bağlantılarımı ziyaret edebilirsiniz.</p>
-        </section>
-        
-        <section id="contact" class="section">
-            <h2>İletişim</h2>
-            <div class="social-links">
-                <a href="https://padros.substack.com" target="_blank">SubStack</a>
-                <a href="https://x.com/padrosum" target="_blank">Twitter</a>
-            </div>
-        </section>
-    </main>
+    <script>
+        // JAVASCRIPT: Mantık Kısmı
+        const input = document.getElementById('commandInput');
+        const history = document.getElementById('history');
+        const terminal = document.getElementById('terminal');
 
-    <footer class="footer">
-        <p>©</p>
-    </footer>
+        // Sayfa herhangi bir yerine tıklandığında inputa odaklan
+        document.addEventListener('click', () => {
+            input.focus();
+        });
 
-    <script src="script.js"></script>
+        input.addEventListener('keydown', function(event) {
+            if (event.key === 'Enter') {
+                const command = input.value.trim().toLowerCase();
+                
+                // 1. Yazılan komutu ekrana bas (Sanki terminalde kalmış gibi)
+                addToHistory("ziyaretci@site:~$ " + input.value, "prompt-style");
+                
+                // 2. Komutu işle ve cevap ver
+                processCommand(command);
+
+                // 3. Inputu temizle ve ekranı aşağı kaydır
+                input.value = '';
+                window.scrollTo(0, document.body.scrollHeight);
+            }
+        });
+
+        function processCommand(cmd) {
+            let response = "";
+
+            switch(cmd) {
+                case 'help':
+                    response = "Kullanılabilir komutlar:\n" +
+                               "- about    : Benim hakkımda bilgi verir.\n" +
+                               "- projects : Projelerimi listeler.\n" +
+                               "- contact  : İletişim bilgilerimi gösterir.\n" +
+                               "- clear    : Ekranı temizler.\n" +
+                               "- social   : Sosyal medya hesapları.";
+                    break;
+                
+                case 'about':
+                    response = "Merhaba! Ben bir Web Geliştiricisiyim. HTML, CSS ve JS ile harikalar yaratmayı severim.";
+                    break;
+
+                case 'projects':
+                    response = "Projelerim:\n1. E-Ticaret Sitesi\n2. Terminal Portföy (Şu an buradasınız!)\n3. Yapay Zeka Chatbot";
+                    break;
+
+                case 'contact':
+                    response = "Email: ornek@email.com\nTelefon: +90 555 555 55 55";
+                    break;
+
+                case 'social':
+                     // HTML içeriği de döndürebilirsiniz
+                    response = "Github: <a href='#' style='color:#fff'>github.com/user</a>\nLinkedin: linkedin.com/in/user";
+                    break;
+
+                case 'clear':
+                    history.innerHTML = "";
+                    return; // Clear komutunda aşağıya inip response yazdırmasın diye.
+
+                case '':
+                    return; // Boş enter'a basılırsa tepki verme.
+
+                default:
+                    response = "Komut bulunamadı: " + cmd + ". 'help' yazarak listeyi görebilirsiniz.";
+                    break;
+            }
+
+            addToHistory(response, "response-style");
+        }
+
+        function addToHistory(text, type) {
+            const div = document.createElement('div');
+            div.className = 'output-line';
+            
+            if (type === "prompt-style") {
+                div.style.color = "#00ff41"; // Komut rengi
+            } else {
+                div.className += " command-response"; // Cevap rengi
+                div.innerHTML = text.replace(/\n/g, "<br>"); // Satır başlarını HTML <br>'e çevir
+            }
+
+            // Eğer HTML tagı içermiyorsa textContent, içeriyorsa innerHTML (güvenlik için dikkatli olunmalı)
+            if(!text.includes("<a href")) {
+                 div.innerText = div.innerText; // Basit text
+            }
+            
+            history.appendChild(div);
+        }
+    </script>
 </body>
 </html>
