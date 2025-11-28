@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>NEON TERMINAL V3</title>
+    <title>Padros - Alihan Karakuş</title>
     <style>
         /* --- CSS: NEON & CRT TASARIMI --- */
         :root {
@@ -144,7 +144,7 @@
         <div id="screen-content">
             <div id="history"></div>
             <div class="input-area" id="input-line">
-                <span class="prompt" id="promptLabel">user@neon:~$</span>
+                <span class="prompt" id="promptLabel">ziyaretçi@Padros:~$</span>
                 <input type="text" id="commandInput" autocomplete="off">
             </div>
         </div>
@@ -154,21 +154,14 @@
         /* --- JAVASCRIPT: SİSTEM YAPILANDIRMASI --- */
         const fileSystem = {
             "root": {
-                "readme.txt": "Neon Terminal v3'e hoşgeldiniz. Bu sistem HTML/JS ile çalışır.",
-                "projeler": {
-                    "cyber_security": {
-                        "port_scanner.exe": "Erişim Reddedildi. (Yetki: Admin)",
-                        "log.txt": "Tarama tamamlandı: 192.168.1.1"
-                    },
-                    "web": {
-                        "site.html": "<html><body>Hello World</body></html>"
-                    }
+                "readme.txt": "Bu proje Gemini ve Padros tarafından hazırlanmıştır.",
+                "Yazılar": {
+                        "Links": "Academia: karakusalihan \n Substack: @padros",
                 },
                 // YENİ KLASÖR EKLENDİ
                 "Padros": { 
-                    "hakkimda.txt": "Ben, bu terminal sitesini tasarlayan kişiyim. HTML, CSS ve JavaScript kullanıyorum.",
-                    "sosyal_media.txt": "Github: github.com/user\nLinkedin: linkedin.com/in/user",
-                    "yazilarim.txt": "En son yazı: Terminal Simülasyonu Yapımı (2025)"
+                    "hakkimda.txt": "Ben Alihan Karakuş(Padros), Felsefe ve Teolojiye olan yoğun ilgim var. 2006 doğumlu bir Türk vatandaşıyım \n Bir çok platformda yazılar yazmış biriyim. Orta seviye İngilizce ve Giriş seviyesinde Arapça biliyorum.  .",
+                    "sosyal_media.txt": " Tek kullandığım sosyal media: \nTwitter: x.com/@padrosum",
                 },
                 "gizli": {
                     "passwords.txt": "admin: 123456\nroot: toor"
@@ -243,7 +236,7 @@
                 "LOADING NEON INTERFACE v3.0...",
                 "CONNECTING TO SERVER... SUCCESS",
                 "----------------------------------------",
-                "NEON OS READY. Komut listesi için 'help' yazın."
+                "Padros Website READY. Komut listesi için 'help' yazın."
             ];
 
             for (let text of bootTexts) {
