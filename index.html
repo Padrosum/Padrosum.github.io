@@ -61,7 +61,7 @@
             box-sizing: border-box;
             overflow-y: auto;
             animation: flicker 0.15s infinite;
-            text-shadow: 0 0 2px var(--neon-glow), 0 0 10px var(--neon-color); /* NEON PARLAMA */
+            text-shadow: 0 0 2px var(--neon-glow), 0 0 10px var(--neon-color); 
             position: relative;
             z-index: 5;
         }
@@ -81,12 +81,12 @@
             display: flex;
             align-items: center;
             margin-top: 10px;
-            opacity: 0; /* Başlangıçta gizli, boot bitince açılacak */
+            opacity: 0; 
             transition: opacity 0.5s;
         }
 
         .prompt {
-            color: #d300c4; /* Neon Pembe */
+            color: #d300c4; 
             text-shadow: 0 0 5px #d300c4;
             margin-right: 10px;
             font-weight: bold;
@@ -106,9 +106,10 @@
         }
 
         /* Renk Sınıfları */
-        .dir { color: #00e5ff; text-shadow: 0 0 5px #00e5ff; font-weight: bold; } /* Neon Mavi */
+        .dir { color: #00e5ff; text-shadow: 0 0 5px #00e5ff; font-weight: bold; } 
         .file { color: #fff; }
         .error { color: #ff3333; text-shadow: 0 0 5px #ff0000; }
+        .success { color: #00ff41; }
         .system { color: #ffaa00; text-shadow: 0 0 5px #ffaa00; }
         
         /* Başlangıç Ekranı */
@@ -144,7 +145,7 @@
         <div id="screen-content">
             <div id="history"></div>
             <div class="input-area" id="input-line">
-                <span class="prompt" id="promptLabel">ziyaretçi@Padros:~$</span>
+                <span class="prompt" id="promptLabel">user@neon:~$</span>
                 <input type="text" id="commandInput" autocomplete="off">
             </div>
         </div>
@@ -152,17 +153,20 @@
 
     <script>
         /* --- JAVASCRIPT: SİSTEM YAPILANDIRMASI --- */
-        const fileSystem = {
+        
+        // Varsayılan Dosya Sistemi Yapısı (Local Storage yoksa bu kullanılır)
+        const defaultFileSystem = {
             "root": {
+                // KULLANICININ VERDİĞİ YENİ İÇERİK BURAYA EKLENDİ
                 "readme.txt": "Bu proje Gemini ve Padros tarafından hazırlanmıştır.",
                 "Yazılar": {
-                        "Links": "Academia: karakusalihan \n Substack: @padros",
+                    "Links": "Academia: karakusalihan \n Substack: @padros",
                 },
-                // YENİ KLASÖR EKLENDİ
-                "Padros": { 
-                    "hakkimda.txt": "Ben Alihan Karakuş(Padros), Felsefe ve Teolojiye olan yoğun ilgim var. 2006 doğumlu bir Türk vatandaşıyım \n Bir çok platformda yazılar yazmış biriyim. Orta seviye İngilizce ve Giriş seviyesinde Arapça biliyorum.  .",
+                "Padros": { 
+                    "hakkimda.txt": "Ben Alihan Karakuş(Padros), Felsefe ve Teolojiye olan yoğun ilgim var. 2006 doğumlu bir Türk vatandaşıyım \n Bir çok platformda yazılar yazmış biriyim. Orta seviye İngilizce ve Giriş seviyesinde Arapça biliyorum.  .",
                     "sosyal_media.txt": " Tek kullandığım sosyal media: \nTwitter: x.com/@padrosum",
                 },
+                // GİZLİ KLASÖR AYNI KALDI
                 "gizli": {
                     "passwords.txt": "admin: 123456\nroot: toor"
                 }
@@ -170,8 +174,9 @@
         };
 
         // Değişkenler
+        let fileSystem;
+        let commandHistory;
         let currentPath = [];
-        let commandHistory = [];
         let historyIndex = -1;
         let isBooting = true;
         let audioCtx;
@@ -184,7 +189,42 @@
         const screenContent = document.getElementById('screen-content');
         const startOverlay = document.getElementById('start-overlay');
 
-        /* --- SES EFEKTLERİ --- */
+        /* --- 1. LOCAL STORAGE İŞLEMLERİ --- */
+
+        function loadState() {
+            // Local Storage'ı kontrol et, yoksa varsayılanı kullan.
+            const savedData = localStorage.getItem('terminalData');
+            if (savedData) {
+                try {
+                    const data = JSON.parse(savedData);
+                    // Sadece fileSystem yüklenirken, mevcut varsayılan yapıyı korumak için derin kopyalama yapılabilir, ancak burada basitçe yükleniyor.
+                    fileSystem = data.fileSystem || defaultFileSystem;
+                    commandHistory = data.history || [];
+                } catch(e) {
+                    console.error("Local Storage verisi bozuk, varsayılana dönülüyor.", e);
+                    fileSystem = defaultFileSystem;
+                    commandHistory = [];
+                }
+            } else {
+                fileSystem = defaultFileSystem;
+                commandHistory = [];
+            }
+        }
+
+        function saveState() {
+            const dataToSave = {
+                fileSystem: fileSystem,
+                history: commandHistory
+            };
+            localStorage.setItem('terminalData', JSON.stringify(dataToSave));
+        }
+
+        // Script başlangıcında durumu yükle
+        loadState();
+
+
+        /* --- 2. SES VE BOOT SİSTEMİ --- */
+
         function initAudio() {
             audioCtx = new (window.AudioContext || window.webkitAudioContext)();
         }
@@ -220,7 +260,6 @@
             }
         }
 
-        /* --- BOOT SİSTEMİ --- */
         startOverlay.addEventListener('click', () => {
             startOverlay.style.display = 'none';
             initAudio();
@@ -230,13 +269,12 @@
         async function bootSequence() {
             const bootTexts = [
                 "SYSTEM BOOT SEQUENCE INITIATED...",
+                "LOADING PERSISTENT DATA... [OK]",
                 "LOADING KERNEL... [OK]",
-                "MOUNTING FILE SYSTEM... [OK]",
-                "CHECKING MEMORY... 1024TB DETECTED",
-                "LOADING NEON INTERFACE v3.0...",
-                "CONNECTING TO SERVER... SUCCESS",
+                "LOADING NEON INTERFACE v4.0...",
                 "----------------------------------------",
-                "Padros Website READY. Komut listesi için 'help' yazın."
+                "Padros READY.",
+                "Komut listesi için 'help' yazın."
             ];
 
             for (let text of bootTexts) {
@@ -250,7 +288,8 @@
             input.focus();
         }
 
-        /* --- TEMEL YARDIMCI FONKSİYONLAR --- */
+        /* --- 3. TEMEL YARDIMCI FONKSİYONLAR --- */
+
         function getCurrentDirObject() {
             let current = fileSystem["root"];
             for (let folder of currentPath) {
@@ -265,7 +304,7 @@
 
         function updatePrompt() {
             const pathStr = currentPath.length === 0 ? "~" : "~/" + currentPath.join("/");
-            promptLabel.innerText = `user@neon:${pathStr}$`;
+            promptLabel.innerText = `Ziyaretçi@Padros:${pathStr}$`;
         }
 
         function printToScreen(text, className = "") {
@@ -276,7 +315,8 @@
             screenContent.scrollTop = screenContent.scrollHeight;
         }
 
-        /* --- OLAY DİNLEYİCİLERİ --- */
+        /* --- 4. OLAY DİNLEYİCİLERİ --- */
+
         document.addEventListener('click', () => {
             if (!isBooting) input.focus();
         });
@@ -296,7 +336,7 @@
 
                 const currentDir = getCurrentDirObject();
                 const files = currentDir ? Object.keys(currentDir) : [];
-                const commands = ['ls', 'cd', 'cat', 'clear', 'help', 'matrix', 'pwd'];
+                const commands = ['ls', 'cd', 'cat', 'clear', 'help', 'matrix', 'pwd', 'mkdir', 'touch', 'rm', 'mv']; 
                 
                 const possibilities = [...commands, ...files];
                 const match = possibilities.find(p => p.startsWith(lastWord));
@@ -313,8 +353,12 @@
                 if (!rawCmd) return;
                 
                 printToScreen(promptLabel.innerText + " " + rawCmd);
-                commandHistory.push(rawCmd);
-                historyIndex = commandHistory.length;
+                
+                if (rawCmd.trim() !== "") {
+                    commandHistory.push(rawCmd);
+                    historyIndex = commandHistory.length;
+                    saveState(); // Geçmişi kaydet
+                }
                 
                 const parts = rawCmd.trim().split(" ");
                 const cmd = parts[0].toLowerCase();
@@ -344,7 +388,8 @@
             }
         });
 
-        /* --- KOMUT İŞLEME MERKEZİ --- */
+        /* --- 5. KOMUT İŞLEME MERKEZİ --- */
+
         function processCommand(cmd, args) {
             const currentDir = getCurrentDirObject();
             if (!currentDir) {
@@ -356,7 +401,7 @@
 
             switch(cmd) {
                 case 'help':
-                    printToScreen("KOMUTLAR: ls, cd, cat, clear, pwd, matrix, help, whoami", "system");
+                    printToScreen("KOMUTLAR: ls, cd, cat, clear, pwd, matrix, whoami, mkdir, touch, rm, mv", "system");
                     break;
                 
                 case 'ls':
@@ -380,7 +425,7 @@
                     const target = args[0];
                     
                     if (!target) {
-                        currentPath = []; // argüman yoksa kök dizine döner
+                        currentPath = []; 
                         updatePrompt();
                         return;
                     }
@@ -388,10 +433,8 @@
                     if (target === "..") {
                         if (currentPath.length > 0) currentPath.pop();
                     } else if (currentDir[target] && typeof currentDir[target] === 'object') {
-                        // SADECE KLASÖRE GİRİŞ İZNİ
                         currentPath.push(target);
                     } else if (currentDir[target] && typeof currentDir[target] === 'string') {
-                        // Hata: Dosyaya girmeye çalışılıyor.
                         playSound('error');
                         printToScreen(`Hata: '${target}' bir klasör değil. Dosya içeriğini okumak için 'cat ${target}' kullanın.`, "error");
                         return;
@@ -410,7 +453,7 @@
                         printToScreen(currentDir[file]);
                     } else {
                         playSound('error');
-                        printToScreen("Hata: Dosya okunamadı.", "error");
+                        printToScreen("Hata: Dosya okunamadı veya yok.", "error");
                     }
                     break;
 
@@ -431,6 +474,89 @@
                     startMatrixEffect();
                     break;
                 
+                // --- YENİ DOSYA SİSTEMİ KOMUTLARI ---
+
+                case 'mkdir':
+                    const dirName = args[0];
+                    if (!dirName) {
+                        playSound('error');
+                        printToScreen("Hata: Dizin adı belirtilmedi. Kullanım: mkdir [dizin_adı]", "error");
+                        return;
+                    }
+                    if (currentDir[dirName]) {
+                        playSound('error');
+                        printToScreen(`Hata: '${dirName}' zaten var.`, "error");
+                        return;
+                    }
+                    currentDir[dirName] = {};
+                    saveState();
+                    printToScreen(`Dizin oluşturuldu: ${dirName}`, "success");
+                    break;
+
+                case 'touch':
+                    const fileName = args[0];
+                    if (!fileName) {
+                        playSound('error');
+                        printToScreen("Hata: Dosya adı belirtilmedi. Kullanım: touch [dosya_adı]", "error");
+                        return;
+                    }
+                    if (currentDir[fileName]) {
+                        printToScreen(`Dosya zamanı güncellendi: ${fileName} (içerik değişmedi)`, "system");
+                        return;
+                    }
+                    currentDir[fileName] = ""; 
+                    saveState();
+                    printToScreen(`Dosya oluşturuldu: ${fileName}`, "success");
+                    break;
+
+                case 'rm':
+                    const itemName = args[0];
+                    if (!itemName) {
+                        playSound('error');
+                        printToScreen("Hata: Silinecek öğe adı belirtilmedi. Kullanım: rm [öğe_adı]", "error");
+                        return;
+                    }
+                    if (!currentDir[itemName]) {
+                        playSound('error');
+                        printToScreen(`Hata: '${itemName}' bulunamadı.`, "error");
+                        return;
+                    }
+
+                    if (typeof currentDir[itemName] === 'object' && Object.keys(currentDir[itemName]).length > 0) {
+                        playSound('error');
+                        printToScreen(`Hata: Dizin boş değil ('${itemName}'). Silinemedi.`, "error");
+                    } else {
+                        delete currentDir[itemName];
+                        saveState();
+                        printToScreen(`Silindi: ${itemName}`, "success");
+                    }
+                    break;
+
+                case 'mv':
+                    const oldName = args[0];
+                    const newName = args[1];
+                    if (!oldName || !newName) {
+                        playSound('error');
+                        printToScreen("Hata: Yetersiz argüman. Kullanım: mv [eski_ad] [yeni_ad]", "error");
+                        return;
+                    }
+                    if (!currentDir[oldName]) {
+                        playSound('error');
+                        printToScreen(`Hata: '${oldName}' bulunamadı.`, "error");
+                        return;
+                    }
+                    if (currentDir[newName]) {
+                        playSound('error');
+                        printToScreen(`Hata: '${newName}' zaten var.`, "error");
+                        return;
+                    }
+
+                    currentDir[newName] = currentDir[oldName];
+                    delete currentDir[oldName];
+                    saveState();
+                    printToScreen(`Taşındı/Yeniden adlandırıldı: ${oldName} -> ${newName}`, "success");
+                    break;
+
                 case '':
                     break;
 
@@ -440,7 +566,7 @@
             }
         }
 
-        /* --- MATRIX EFEKTİ (BONUS) --- */
+        /* --- 6. MATRIX EFEKTİ --- */
         function startMatrixEffect() {
             const canvas = document.createElement('canvas');
             canvas.style.position = 'fixed';
