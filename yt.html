@@ -3,128 +3,134 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Akademik Player</title>
-    <link rel="stylesheet" href="https://cdn.plyr.io/3.7.8/plyr.css" />
+    <title>Reklamsız Akademik İzleyici</title>
     <style>
         body {
-            background-color: #1a1a1a;
-            color: #fff;
-            font-family: 'Segoe UI', sans-serif;
+            background-color: #121212;
+            color: #e0e0e0;
+            font-family: 'Courier New', Courier, monospace; /* Daha "coder" havası */
             display: flex;
             flex-direction: column;
             align-items: center;
-            padding: 50px;
+            padding: 40px;
+            margin: 0;
+            height: 100vh;
         }
 
-        .input-group {
-            margin-bottom: 30px;
-            display: flex;
-            gap: 10px;
+        h2 { margin-bottom: 20px; border-bottom: 2px solid #e74c3c; padding-bottom: 10px; }
+
+        .control-panel {
+            background: #1e1e1e;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
             width: 100%;
             max-width: 800px;
+            display: flex;
+            gap: 10px;
+            margin-bottom: 30px;
         }
 
         input {
             flex: 1;
-            padding: 15px;
-            border-radius: 8px;
-            border: none;
-            background: #333;
-            color: white;
-            font-size: 16px;
+            padding: 12px;
+            background: #2c2c2c;
+            border: 1px solid #444;
+            color: #fff;
+            border-radius: 5px;
+            outline: none;
         }
+
+        input:focus { border-color: #e74c3c; }
 
         button {
-            padding: 15px 30px;
-            background: #3498db;
+            padding: 12px 25px;
+            background: #e74c3c;
             color: white;
             border: none;
-            border-radius: 8px;
+            border-radius: 5px;
             cursor: pointer;
             font-weight: bold;
-            transition: background 0.3s;
+            transition: transform 0.2s;
         }
 
-        button:hover { background: #2980b9; }
+        button:hover { transform: scale(1.05); background: #c0392b; }
 
-        /* Video Konteyneri */
-        .video-wrapper {
+        .screen-container {
             width: 100%;
-            max-width: 800px;
-            box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+            max-width: 900px;
+            aspect-ratio: 16 / 9;
+            background: #000;
             border-radius: 12px;
             overflow: hidden;
-            display: none; /* Başlangıçta gizli */
+            box-shadow: 0 0 50px rgba(231, 76, 60, 0.1);
+            position: relative;
         }
-        
-        /* Plyr özel renk ayarı (YouTube kırmızısı yerine Mavi) */
-        .plyr--full-ui input[type=range] {
-            color: #3498db;
+
+        iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
+        }
+
+        .placeholder {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: #555;
+            font-size: 1.2rem;
+            pointer-events: none;
         }
     </style>
 </head>
 <body>
 
-    <h2>Özel Video Oynatıcı</h2>
+    <h2>NO-AD STREAM DECODER</h2>
 
-    <div class="input-group">
-        <input type="text" id="youtubeLink" placeholder="YouTube linkini buraya yapıştırın...">
-        <button onclick="loadVideo()">İzle</button>
+    <div class="control-panel">
+        <input type="text" id="videoUrl" placeholder="YouTube linkini yapıştır (Ctrl+V)">
+        <button onclick="bypassAndPlay()">Sisteme Yükle</button>
     </div>
 
-    <div class="video-wrapper" id="videoContainer">
-        <div id="player" data-plyr-provider="youtube" data-plyr-embed-id=""></div>
+    <div class="screen-container">
+        <div id="placeholderText" class="placeholder">Veri akışı bekleniyor...</div>
+        <iframe id="videoFrame" src="" allowfullscreen></iframe>
     </div>
 
-    <script src="https://cdn.plyr.io/3.7.8/plyr.js"></script>
     <script>
-        // Global player değişkeni
-        let player;
+        function bypassAndPlay() {
+            const inputUrl = document.getElementById('videoUrl').value;
+            const frame = document.getElementById('videoFrame');
+            const placeholder = document.getElementById('placeholderText');
 
-        function loadVideo() {
-            const urlInput = document.getElementById('youtubeLink').value;
-            const container = document.getElementById('videoContainer');
-            
-            // 1. YouTube ID'sini linkten ayıklayan Akademik Regex Formülü
-            // Bu formül hem youtube.com hem de youtu.be linklerini tanır.
-            const videoIdMatch = urlInput.match(/(?:https?:\/\/)?(?:www\.)?(?:youtube\.com\/(?:[^\/\n\s]+\/\S+\/|(?:v|e(?:mbed)?)\/|\S*?[?&]v=)|youtu\.be\/)([a-zA-Z0-9_-]{11})/);
-            
-            if (videoIdMatch && videoIdMatch[1]) {
-                const videoId = videoIdMatch[1];
+            // 1. YouTube ID'sini Regex ile çekiyoruz
+            const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=)([^#&?]*).*/;
+            const match = inputUrl.match(regExp);
 
-                // Konteyneri görünür yap
-                container.style.display = 'block';
-
-                // Eğer daha önce bir player varsa onu yok et (memory leak önlemek için)
-                if (player) {
-                    player.destroy();
-                }
-
-                // HTML'deki hedef div'i güncelle
-                document.getElementById('player').setAttribute('data-plyr-embed-id', videoId);
-
-                // 2. Player'ı Başlat (Initialize)
-                player = new Plyr('#player', {
-                    controls: ['play-large', 'play', 'progress', 'current-time', 'mute', 'volume', 'fullscreen'],
-                    // YouTube arayüzünü gizlemek için gerekli ayarlar
-                    youtube: { 
-                        noCookie: true, 
-                        rel: 0, 
-                        showinfo: 0, 
-                        iv_load_policy: 3, 
-                        modestbranding: 1  
-                    }
-                });
-
-                // Otomatik oynat
-                player.on('ready', () => {
-                    player.play();
-                });
-
+            if (match && match[2].length === 11) {
+                const videoId = match[2];
+                
+                // 2. KRİTİK NOKTA: Kaynağı YouTube yerine "Invidious" örneğine yönlendiriyoruz.
+                // Bu sunucu (yewtu.be), videoyu YouTube'dan çeker, reklamı temizler ve bize sunar.
+                // autoplay=1: Otomatik oynat
+                // dark_mode=true: Arayüzü koyu yap
+                const cleanSource = `https://yewtu.be/embed/${videoId}?autoplay=1&dark_mode=true&modestbranding=1`;
+                
+                frame.src = cleanSource;
+                placeholder.style.display = 'none';
             } else {
-                alert("Lütfen geçerli bir YouTube linki giriniz.");
+                alert("Hata: Geçersiz kaynak linki. Lütfen linki kontrol edin.");
             }
         }
+        
+        // Enter tuşu desteği
+        document.getElementById("videoUrl").addEventListener("keypress", function(event) {
+            if (event.key === "Enter") {
+                bypassAndPlay();
+            }
+        });
     </script>
+
 </body>
 </html>
