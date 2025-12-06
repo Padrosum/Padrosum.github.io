@@ -3,613 +3,177 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Padros - Alihan Karakuş</title>
+    <meta name="description" content="Kişisel Web Sitesi - Ad Soyad">
+    <title>Padros</title>
+    
     <style>
-        /* --- CSS: NEON & CRT TASARIMI --- */
         :root {
-            --neon-color: #0f0; /* Ana yeşil neon */
-            --neon-glow: #00ff41;
-            --bg-color: #050505;
+            --bg-color: #f4f4f4;
+            --text-color: #333;
+            --link-color: #0066cc;
+            --container-width: 800px;
+        }
+
+        body.dark-mode {
+            --bg-color: #1a1a1a;
+            --text-color: #e0e0e0;
+            --link-color: #4da6ff;
         }
 
         body {
-            background-color: var(--bg-color);
-            color: var(--neon-color);
-            font-family: 'Courier New', Courier, monospace;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
             margin: 0;
-            height: 100vh;
-            overflow: hidden; 
-            display: flex;
-            justify-content: center;
-            align-items: center;
+            padding: 0;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            transition: background-color 0.3s, color 0.3s;
         }
 
-        /* CRT Ekran Çerçevesi */
-        #monitor {
-            width: 100%;
-            height: 100%;
-            position: relative;
-            overflow: hidden;
-            background: radial-gradient(circle, #112 0%, #000 100%);
-            box-shadow: inset 0 0 5rem rgba(0,0,0,0.75);
+        .container {
+            max-width: var(--container-width);
+            margin: 0 auto;
+            padding: 20px;
+            background: rgba(255, 255, 255, 0.05); /* Hafif transparan */
         }
 
-        /* Tarama Çizgileri (Scanlines) */
-        #monitor::before {
-            content: " ";
-            display: block;
-            position: absolute;
-            top: 0; left: 0; bottom: 0; right: 0;
-            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06));
-            background-size: 100% 2px, 3px 100%;
-            z-index: 10;
-            pointer-events: none;
+        header {
+            border-bottom: 2px solid #ccc;
+            padding-bottom: 20px;
+            margin-bottom: 20px;
         }
 
-        /* Ekran Titreme Animasyonu */
-        @keyframes flicker {
-            0% { opacity: 0.97; } 5% { opacity: 0.95; }
-            10% { opacity: 0.9; } 15% { opacity: 0.95; }
-            20% { opacity: 0.99; } 50% { opacity: 0.95; }
-            55% { opacity: 0.9; } 60% { opacity: 0.95; }
-            100% { opacity: 0.98; }
+        nav ul {
+            list-style-type: none;
+            padding: 0;
         }
 
-        #screen-content {
-            height: 100%;
-            padding: 30px;
-            box-sizing: border-box;
-            overflow-y: auto;
-            animation: flicker 0.15s infinite;
-            text-shadow: 0 0 2px var(--neon-glow), 0 0 10px var(--neon-color); 
-            position: relative;
-            z-index: 5;
+        nav ul li {
+            display: inline;
+            margin-right: 15px;
         }
 
-        /* Scrollbar gizleme */
-        #screen-content::-webkit-scrollbar { width: 0px; }
-        #screen-content::-moz-scrollbar { width: 0px; }
-
-        .output-line {
-            margin-bottom: 5px;
-            white-space: pre-wrap;
-            line-height: 1.5;
-            font-size: 18px;
+        a {
+            color: var(--link-color);
+            text-decoration: none;
         }
 
-        .input-area {
-            display: flex;
-            align-items: center;
-            margin-top: 10px;
-            opacity: 0; 
-            transition: opacity 0.5s;
+        a:hover {
+            text-decoration: underline;
         }
 
-        .prompt {
-            color: #d300c4; 
-            text-shadow: 0 0 5px #d300c4;
-            margin-right: 10px;
-            font-weight: bold;
+        h1, h2, h3 {
+            color: var(--text-color);
         }
 
-        input[type="text"] {
-            background: transparent;
-            border: none;
-            color: #fff;
-            font-family: inherit;
-            font-size: 18px;
-            flex-grow: 1;
-            outline: none;
-            text-shadow: 0 0 5px #fff;
-            caret-color: var(--neon-color);
-            text-transform: lowercase;
-        }
-
-        /* Renk Sınıfları */
-        .dir { color: #00e5ff; text-shadow: 0 0 5px #00e5ff; font-weight: bold; } 
-        .file { color: #fff; }
-        .error { color: #ff3333; text-shadow: 0 0 5px #ff0000; }
-        .success { color: #00ff41; }
-        .system { color: #ffaa00; text-shadow: 0 0 5px #ffaa00; }
-        
-        /* Başlangıç Ekranı */
-        #start-overlay {
-            position: absolute;
-            top: 0; left: 0; width: 100%; height: 100%;
-            background: #000;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            z-index: 999;
+        /* Tema Değiştirme Butonu Stili */
+        #theme-toggle {
+            float: right;
+            padding: 5px 10px;
             cursor: pointer;
+            background: none;
+            border: 1px solid var(--text-color);
+            color: var(--text-color);
         }
-        #start-text {
-            font-size: 24px;
-            animation: blink 1s infinite;
-            text-align: center;
-            text-shadow: 0 0 5px var(--neon-color);
-        }
-        @keyframes blink { 50% { opacity: 0; } }
-
     </style>
 </head>
 <body>
 
-    <div id="start-overlay">
-        <div id="start-text">
-            [ SİSTEMİ BAŞLATMAK İÇİN TIKLAYIN ]
-        </div>
-    </div>
+    <div class="container">
+        <a href="#main-content" style="position:absolute; left:-999px; top:auto; width:1px; height:1px; overflow:hidden;">Ana içeriğe geç</a>
 
-    <div id="monitor">
-        <div id="screen-content">
-            <div id="history"></div>
-            <div class="input-area" id="input-line">
-                <span class="prompt" id="promptLabel">user@neon:~$</span>
-                <input type="text" id="commandInput" autocomplete="off">
-            </div>
-        </div>
+        <header>
+            <div id="js-controls"></div>
+            
+            <h1>Merhaba ben Alihan KARAKUŞ / Padros</h1>
+            <p>Alaylı Felsefeci | Aristotelesçi | Padrosî</p>
+            
+            <nav>
+                <h3>Menü:</h3>
+                <ul>
+                    <li><a href="#hakkimda">Hakkımda</a></li>
+                    <li><a href="#projeler">Projeler</a></li>
+                    <li><a href="#iletisim">İletişim</a></li>
+                </ul>
+            </nav>
+        </header>
+
+        <hr> <main id="main-content">
+            <section id="hakkimda">
+                <h2>Hakkımda</h2>
+                <p>
+                   Merhaba! Ben Alihan KARAKUŞ. Twitter ve diğer mecralarda Padros ismini kullanan bir öğrenciyim. Bir çok farklı alanda çalışma
+                   ve projelerim var. Çok geniş bir yelpazede olmasına karşın burada onların bazılarından bahsedeceğiz.
+                </p>
+                <p>
+                    
+                </p>
+            </section>
+
+            <hr>
+
+            <section id="projeler">
+                <h2>Projelerim</h2>
+                <ul>
+                    <li>
+                        <strong>Mustakil Dergi:</strong> Arkadaşlarım ve onların arkadaşlarının bir arada kullandığı blog sayfası
+                        <br>
+                        <a href="https://www.mustakildergi.com">Projeyi İncele &raquo;</a>
+                    </li>
+                </ul>
+            </section>
+
+            <hr>
+
+            <section id="iletisim">
+                <h2>İletişim</h2>
+                <p>Benimle aşağıdaki yollarla iletişime geçebilirsiniz:</p>
+                <ul>
+                    <li>E-posta: <a href="iletisim.vocation936@passinbox.com">iletisim.vocation936@passinbox.com</a></li>
+                    <li>Substack: <a href="https://padros.substack.com/">padros.substack.com</a></li>
+                    <li>Twitter: <a href="https://x.com/padrosum">@padrosum</a></li>
+                </ul>
+            </section>
+        </main>
+
+        <hr>
+
+        <footer>
+            <p>&copy; https://www.gnu.org/philosophy/free-sw.html </p>
+            <p><small>Bu site Lynx/w3m dostudur.</small></p>
+        </footer>
     </div>
 
     <script>
-        /* --- JAVASCRIPT: SİSTEM YAPILANDIRMASI --- */
-        
-        // Varsayılan Dosya Sistemi Yapısı (Local Storage yoksa bu kullanılır)
-        const defaultFileSystem = {
-            "root": {
-                // KULLANICININ VERDİĞİ YENİ İÇERİK BURAYA EKLENDİ
-                "readme.txt": "Bu proje Gemini ve Padros tarafından hazırlanmıştır.",
-                "Yazılar": {
-                    "Links": "Academia: karakusalihan \n Substack: @padros",
-                },
-                "Padros": { 
-                    "hakkimda.txt": "Ben Alihan Karakuş(Padros), Felsefe ve Teolojiye olan yoğun ilgim var. 2006 doğumlu bir Türk vatandaşıyım \n Bir çok platformda yazılar yazmış biriyim. Orta seviye İngilizce ve Giriş seviyesinde Arapça biliyorum.  .",
-                    "sosyal_media.txt": " Tek kullandığım sosyal media: \nTwitter: x.com/@padrosum",
-                    "eposta.txt": " padrosum@proton.me ",
-                },
-                // GİZLİ KLASÖR AYNI KALDI
-                "gizli": {
-                    "passwords.txt": "admin: 123456\nroot: toor"
-                }
-            }
-        };
-
-        // Değişkenler
-        let fileSystem;
-        let commandHistory;
-        let currentPath = [];
-        let historyIndex = -1;
-        let isBooting = true;
-        let audioCtx;
-
-        // DOM Elemanları
-        const input = document.getElementById('commandInput');
-        const historyDiv = document.getElementById('history');
-        const promptLabel = document.getElementById('promptLabel');
-        const inputArea = document.getElementById('input-line');
-        const screenContent = document.getElementById('screen-content');
-        const startOverlay = document.getElementById('start-overlay');
-
-        /* --- 1. LOCAL STORAGE İŞLEMLERİ --- */
-
-        function loadState() {
-            // Local Storage'ı kontrol et, yoksa varsayılanı kullan.
-            const savedData = localStorage.getItem('terminalData');
-            if (savedData) {
-                try {
-                    const data = JSON.parse(savedData);
-                    // Sadece fileSystem yüklenirken, mevcut varsayılan yapıyı korumak için derin kopyalama yapılabilir, ancak burada basitçe yükleniyor.
-                    fileSystem = data.fileSystem || defaultFileSystem;
-                    commandHistory = data.history || [];
-                } catch(e) {
-                    console.error("Local Storage verisi bozuk, varsayılana dönülüyor.", e);
-                    fileSystem = defaultFileSystem;
-                    commandHistory = [];
-                }
-            } else {
-                fileSystem = defaultFileSystem;
-                commandHistory = [];
-            }
-        }
-
-        function saveState() {
-            const dataToSave = {
-                fileSystem: fileSystem,
-                history: commandHistory
-            };
-            localStorage.setItem('terminalData', JSON.stringify(dataToSave));
-        }
-
-        // Script başlangıcında durumu yükle
-        loadState();
-
-
-        /* --- 2. SES VE BOOT SİSTEMİ --- */
-
-        function initAudio() {
-            audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-        }
-
-        function playSound(type) {
-            if (!audioCtx) return;
-            if (audioCtx.state === 'suspended') audioCtx.resume();
-
-            const osc = audioCtx.createOscillator();
-            const gainNode = audioCtx.createGain();
-            osc.connect(gainNode);
-            gainNode.connect(audioCtx.destination);
-
-            if (type === 'key') {
-                osc.type = 'square';
-                osc.frequency.setValueAtTime(600, audioCtx.currentTime);
-                osc.frequency.exponentialRampToValueAtTime(100, audioCtx.currentTime + 0.05);
-                gainNode.gain.setValueAtTime(0.03, audioCtx.currentTime);
-                osc.start();
-                osc.stop(audioCtx.currentTime + 0.05);
-            } else if (type === 'enter') {
-                osc.type = 'sawtooth';
-                osc.frequency.setValueAtTime(800, audioCtx.currentTime);
-                gainNode.gain.setValueAtTime(0.05, audioCtx.currentTime);
-                osc.start();
-                osc.stop(audioCtx.currentTime + 0.1);
-            } else if (type === 'error') {
-                osc.type = 'sawtooth';
-                osc.frequency.setValueAtTime(150, audioCtx.currentTime);
-                gainNode.gain.setValueAtTime(0.1, audioCtx.currentTime);
-                osc.start();
-                osc.stop(audioCtx.currentTime + 0.3);
-            }
-        }
-
-        startOverlay.addEventListener('click', () => {
-            startOverlay.style.display = 'none';
-            initAudio();
-            bootSequence();
-        });
-
-        async function bootSequence() {
-            const bootTexts = [
-                "SYSTEM BOOT SEQUENCE INITIATED...",
-                "LOADING PERSISTENT DATA... [OK]",
-                "LOADING KERNEL... [OK]",
-                "LOADING NEON INTERFACE v4.0...",
-                "----------------------------------------",
-                "Padros READY.",
-                "Komut listesi için 'help' yazın."
-            ];
-
-            for (let text of bootTexts) {
-                await new Promise(r => setTimeout(r, 200)); 
-                printToScreen(text, "system");
-                playSound('key');
-            }
+        // Sadece JavaScript çalışan tarayıcılarda çalışacak kod bloğu
+        document.addEventListener("DOMContentLoaded", function() {
             
-            isBooting = false;
-            inputArea.style.opacity = 1;
-            input.focus();
-        }
+            // 1. Karanlık Mod Butonunu Oluştur
+            // Bu butonu HTML'e elle koymadık, çünkü JS çalışmıyorsa (Lynx) butonun görünmemesi gerekir.
+            const headerDiv = document.getElementById('js-controls');
+            const toggleBtn = document.createElement('button');
+            toggleBtn.id = 'theme-toggle';
+            toggleBtn.innerText = "Karanlık Mod";
+            toggleBtn.setAttribute('aria-label', 'Karanlık moda geç');
+            
+            headerDiv.appendChild(toggleBtn);
 
-        /* --- 3. TEMEL YARDIMCI FONKSİYONLAR --- */
-
-        function getCurrentDirObject() {
-            let current = fileSystem["root"];
-            for (let folder of currentPath) {
-                if(current[folder]) {
-                    current = current[folder];
+            // 2. Mod Değiştirme Fonksiyonu
+            toggleBtn.addEventListener('click', function() {
+                document.body.classList.toggle('dark-mode');
+                
+                // Buton metnini güncelle
+                if (document.body.classList.contains('dark-mode')) {
+                    toggleBtn.innerText = "Aydınlık Mod";
                 } else {
-                    return null;
+                    toggleBtn.innerText = "Karanlık Mod";
                 }
-            }
-            return current;
-        }
+            });
 
-        function updatePrompt() {
-            const pathStr = currentPath.length === 0 ? "~" : "~/" + currentPath.join("/");
-            promptLabel.innerText = `Ziyaretçi@Padros:${pathStr}$`;
-        }
-
-        function printToScreen(text, className = "") {
-            const div = document.createElement('div');
-            div.className = "output-line " + className;
-            div.innerHTML = text.replace(/\n/g, "<br>");
-            historyDiv.appendChild(div);
-            screenContent.scrollTop = screenContent.scrollHeight;
-        }
-
-        /* --- 4. OLAY DİNLEYİCİLERİ --- */
-
-        document.addEventListener('click', () => {
-            if (!isBooting) input.focus();
+            // 3. Konsola Selamla (Modern tarayıcılar için küçük bir sürpriz)
+            console.log("Merhaba! Kodları incelediğini görüyorum. Bu site Lynx dostudur!");
         });
-
-        input.addEventListener('keydown', function(e) {
-            if (isBooting) return;
-
-            // Tuş sesi
-            if (e.key !== 'Enter') playSound('key');
-
-            // Tab (Otomatik Tamamlama)
-            if (e.key === 'Tab') {
-                e.preventDefault();
-                const val = input.value.trim();
-                const args = val.split(" ");
-                const lastWord = args[args.length - 1];
-
-                const currentDir = getCurrentDirObject();
-                const files = currentDir ? Object.keys(currentDir) : [];
-                const commands = ['ls', 'cd', 'cat', 'clear', 'help', 'matrix', 'pwd', 'mkdir', 'touch', 'rm', 'mv']; 
-                
-                const possibilities = [...commands, ...files];
-                const match = possibilities.find(p => p.startsWith(lastWord));
-
-                if (match) {
-                    args[args.length - 1] = match;
-                    input.value = args.join(" ");
-                }
-            }
-
-            // Enter (Komut Gönder)
-            if (e.key === 'Enter') {
-                const rawCmd = input.value;
-                if (!rawCmd) return;
-                
-                printToScreen(promptLabel.innerText + " " + rawCmd);
-                
-                if (rawCmd.trim() !== "") {
-                    commandHistory.push(rawCmd);
-                    historyIndex = commandHistory.length;
-                    saveState(); // Geçmişi kaydet
-                }
-                
-                const parts = rawCmd.trim().split(" ");
-                const cmd = parts[0].toLowerCase();
-                const args = parts.slice(1);
-                
-                processCommand(cmd, args);
-                input.value = "";
-                playSound('enter');
-            }
-
-            // Geçmiş (Yukarı/Aşağı Ok)
-            if (e.key === 'ArrowUp') {
-                if (historyIndex > 0) {
-                    historyIndex--;
-                    input.value = commandHistory[historyIndex];
-                }
-                e.preventDefault();
-            } else if (e.key === 'ArrowDown') {
-                if (historyIndex < commandHistory.length - 1) {
-                    historyIndex++;
-                    input.value = commandHistory[historyIndex];
-                } else {
-                    historyIndex = commandHistory.length;
-                    input.value = "";
-                }
-                e.preventDefault();
-            }
-        });
-
-        /* --- 5. KOMUT İŞLEME MERKEZİ --- */
-
-        function processCommand(cmd, args) {
-            const currentDir = getCurrentDirObject();
-            if (!currentDir) {
-                printToScreen("Kritik Hata: Dosya sistemi yolu bozuk.", "error");
-                currentPath = [];
-                updatePrompt();
-                return;
-            }
-
-            switch(cmd) {
-                case 'help':
-                    printToScreen("KOMUTLAR: ls, cd, cat, clear, pwd, matrix, whoami, mkdir, touch, rm, mv", "system");
-                    break;
-                
-                case 'ls':
-                    const items = Object.keys(currentDir);
-                    if (items.length === 0) {
-                        printToScreen("(boş)", "system");
-                    } else {
-                        let output = "";
-                        items.forEach(item => {
-                            if (typeof currentDir[item] === 'object') {
-                                output += `<span class='dir'>${item}/</span>  `;
-                            } else {
-                                output += `<span class='file'>${item}</span>  `;
-                            }
-                        });
-                        printToScreen(output);
-                    }
-                    break;
-
-                case 'cd':
-                    const target = args[0];
-                    
-                    if (!target) {
-                        currentPath = []; 
-                        updatePrompt();
-                        return;
-                    }
-                    
-                    if (target === "..") {
-                        if (currentPath.length > 0) currentPath.pop();
-                    } else if (currentDir[target] && typeof currentDir[target] === 'object') {
-                        currentPath.push(target);
-                    } else if (currentDir[target] && typeof currentDir[target] === 'string') {
-                        playSound('error');
-                        printToScreen(`Hata: '${target}' bir klasör değil. Dosya içeriğini okumak için 'cat ${target}' kullanın.`, "error");
-                        return;
-                    } 
-                    else {
-                        playSound('error');
-                        printToScreen(`Hata: '${target}' bulunamadı.`, "error");
-                        return;
-                    }
-                    updatePrompt();
-                    break;
-
-                case 'cat':
-                    const file = args[0];
-                    if (currentDir[file] && typeof currentDir[file] === 'string') {
-                        printToScreen(currentDir[file]);
-                    } else {
-                        playSound('error');
-                        printToScreen("Hata: Dosya okunamadı veya yok.", "error");
-                    }
-                    break;
-
-                case 'clear':
-                    historyDiv.innerHTML = "";
-                    break;
-                
-                case 'pwd':
-                    printToScreen("/root/" + currentPath.join("/"));
-                    break;
-
-                case 'whoami':
-                    printToScreen("user");
-                    break;
-
-                case 'matrix':
-                    printToScreen("Matrix modu aktif ediliyor... (Durdurmak için sayfayı yenile)", "system");
-                    startMatrixEffect();
-                    break;
-                
-                // --- YENİ DOSYA SİSTEMİ KOMUTLARI ---
-
-                case 'mkdir':
-                    const dirName = args[0];
-                    if (!dirName) {
-                        playSound('error');
-                        printToScreen("Hata: Dizin adı belirtilmedi. Kullanım: mkdir [dizin_adı]", "error");
-                        return;
-                    }
-                    if (currentDir[dirName]) {
-                        playSound('error');
-                        printToScreen(`Hata: '${dirName}' zaten var.`, "error");
-                        return;
-                    }
-                    currentDir[dirName] = {};
-                    saveState();
-                    printToScreen(`Dizin oluşturuldu: ${dirName}`, "success");
-                    break;
-
-                case 'touch':
-                    const fileName = args[0];
-                    if (!fileName) {
-                        playSound('error');
-                        printToScreen("Hata: Dosya adı belirtilmedi. Kullanım: touch [dosya_adı]", "error");
-                        return;
-                    }
-                    if (currentDir[fileName]) {
-                        printToScreen(`Dosya zamanı güncellendi: ${fileName} (içerik değişmedi)`, "system");
-                        return;
-                    }
-                    currentDir[fileName] = ""; 
-                    saveState();
-                    printToScreen(`Dosya oluşturuldu: ${fileName}`, "success");
-                    break;
-
-                case 'rm':
-                    const itemName = args[0];
-                    if (!itemName) {
-                        playSound('error');
-                        printToScreen("Hata: Silinecek öğe adı belirtilmedi. Kullanım: rm [öğe_adı]", "error");
-                        return;
-                    }
-                    if (!currentDir[itemName]) {
-                        playSound('error');
-                        printToScreen(`Hata: '${itemName}' bulunamadı.`, "error");
-                        return;
-                    }
-
-                    if (typeof currentDir[itemName] === 'object' && Object.keys(currentDir[itemName]).length > 0) {
-                        playSound('error');
-                        printToScreen(`Hata: Dizin boş değil ('${itemName}'). Silinemedi.`, "error");
-                    } else {
-                        delete currentDir[itemName];
-                        saveState();
-                        printToScreen(`Silindi: ${itemName}`, "success");
-                    }
-                    break;
-
-                case 'mv':
-                    const oldName = args[0];
-                    const newName = args[1];
-                    if (!oldName || !newName) {
-                        playSound('error');
-                        printToScreen("Hata: Yetersiz argüman. Kullanım: mv [eski_ad] [yeni_ad]", "error");
-                        return;
-                    }
-                    if (!currentDir[oldName]) {
-                        playSound('error');
-                        printToScreen(`Hata: '${oldName}' bulunamadı.`, "error");
-                        return;
-                    }
-                    if (currentDir[newName]) {
-                        playSound('error');
-                        printToScreen(`Hata: '${newName}' zaten var.`, "error");
-                        return;
-                    }
-
-                    currentDir[newName] = currentDir[oldName];
-                    delete currentDir[oldName];
-                    saveState();
-                    printToScreen(`Taşındı/Yeniden adlandırıldı: ${oldName} -> ${newName}`, "success");
-                    break;
-
-                case '':
-                    break;
-
-                default:
-                    playSound('error');
-                    printToScreen(`Komut bulunamadı: ${cmd}`, "error");
-            }
-        }
-
-        /* --- 6. MATRIX EFEKTİ --- */
-        function startMatrixEffect() {
-            const canvas = document.createElement('canvas');
-            canvas.style.position = 'fixed';
-            canvas.style.top = '0';
-            canvas.style.left = '0';
-            canvas.style.width = '100%';
-            canvas.style.height = '100%';
-            canvas.style.zIndex = '998'; 
-            canvas.style.opacity = '0.3';
-            document.body.appendChild(canvas);
-
-            const ctx = canvas.getContext('2d');
-            canvas.width = window.innerWidth;
-            canvas.height = window.innerHeight;
-
-            const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789アァカサタナハマヤャラワガザダバパイィキシチニヒミリヂビピウゥクスツヌフムユュルグズブヅプエェケセテネヘメレゲゼデベペオォコソトノホモヨョロヲゴゾドボポヴッン';
-
-            const fontSize = 16;
-            const columns = canvas.width / fontSize;
-            const drops = [];
-
-            for(let x = 0; x < columns; x++) drops[x] = 1;
-
-            function draw() {
-                ctx.fillStyle = 'rgba(0, 0, 0, 0.05)';
-                ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-                ctx.fillStyle = '#0F0';
-                ctx.font = fontSize + 'px monospace';
-
-                for(let i = 0; i < drops.length; i++) {
-                    const text = alphabet.charAt(Math.floor(Math.random() * alphabet.length));
-                    ctx.fillText(text, i*fontSize, drops[i]*fontSize);
-
-                    if(drops[i]*fontSize > canvas.height && Math.random() > 0.975)
-                        drops[i] = 0;
-                    
-                    drops[i]++;
-                }
-            }
-            setInterval(draw, 30);
-        }
     </script>
+
 </body>
 </html>
